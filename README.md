@@ -9,3 +9,5 @@ The data we analyse can be found in the `data` folder.
 - timeline of important breakthroughs
 - analyze how "Firsts" are distributed over categories (i.e. Politics, Education & Science, ...)
 - visualise how historic events (Civil War, Civil Rights Movement, ...) impacted African-American society
+- augment the data and run geospatial analyses (where happend the breakthroughs?, ...)
+- augment the data and run analyses by gender
