@@ -21,8 +21,182 @@ library(here)
 library(extrafont)
 library(ggtext)
 library(lubridate)
+library(rvest)
 
 loadfonts(device="win")
 
 ```
+
+# Celebrating Black Lives
+
+## Load Data
+
+```{r load raw}
+
+firsts <- read_csv(here("../data/firsts.csv"))
+science <- read_csv(here("../data/science.csv"))
+
+```
+
+Maybe use "gender" package on the first name!
+
+```{r science data}
+
+science %>% 
+  separate_rows(occupation_s, sep = "; ") %>% 
+  mutate(occupation = str_to_title(occupation_s)) %>% 
+  count(occupation, sort = TRUE)
+
+
+science %>% 
+  filter(str_detect(occupation_s, regex("statistician", ignore_case = TRUE))) %>% 
+  pull(links)
+
+```
+
+scrape wikipedia
+
+```{r}
+
+library(rvest)
+
+# write as function --> extract_infobox --> map --> then unnest
+read_html("https://en.wikipedia.org/wiki/David_Blackwell") %>% 
+  html_node(".vcard") %>% 
+  html_table(header = FALSE)
+
+
+
+# for production:
+science %>% 
+  sample_n(10) %>% 
+  mutate(html = map(links, read_html))
+
+
+
+```
+
+
+# Rescraping the firsts
+
+```{r}
+
+first_url <- "https://en.wikipedia.org/wiki/List_of_African-American_firsts"
+
+raw_first <- read_html(first_url)
+
+get_year <- function(id_num){
+  raw_first %>% 
+  html_nodes(glue::glue("#mw-content-text > div > h4:nth-child({id_num}) > span.mw-headline")) %>% 
+  html_attr("id")
+}
+
+get_first <- function(id_num){
+  raw_first %>% 
+    html_nodes(glue::glue("#mw-content-text > div > ul:nth-child({id_num}) > li")) %>% 
+    lapply(function(x) x)
+}
+
+extract_website <- function(x) {
+  str_replace(str_extract(str_extract(str_replace(x, ":.*?<a", ": <a"), ": <a href=\\\".*?\\\""), "/wiki.*?\\\""), "\\\"", "")
+}
+
+extract_first <- function(x) {
+  str_replace(str_extract(x, "^First.*?:"), ":", "")
+}
+
+extract_name <- function(x) {
+  str_replace(str_replace(str_extract(str_extract(str_replace(x, ":.*?<a", ": <a"), ": <a href=\\\".*?\\\">"), "title=.*\\\">"), "title=\\\"", ""), "\\\">", "")
+}
+
+raw_first_df <- tibble(id_num = 1:409) %>% 
+  mutate(year = map(id_num, get_year),
+         data = map(id_num, get_first))
+
+clean_first <- raw_first_df %>% 
+  mutate(year = as.integer(year)) %>% 
+  fill(year) %>% 
+  unnest(data) %>% 
+  mutate(data_string_raw = map(data, toString),
+         data_string_cle = map(data, html_text)) %>% 
+  mutate(wiki = map(data_string_raw, extract_website),
+         first = map(data_string_cle, extract_first),
+         name = map(data_string_raw, extract_name))
+
+edu <- paste0(c(
+  "practice", "graduate", "learning", "college", "university", "medicine",
+  "earn", "ph.d.", "professor", "teacher", "school", "nobel", "invent", "patent",
+  "medicine", "degree", "doctor", "medical", "nurse", "physician", "m.d.", "b.a.", "b.s.", "m.b.a",
+  "principal", "space", "astronaut", "scientific"
+), collapse = "|")
+
+religion <- c("bishop", "rabbi", "minister", "church", "priest", "pastor", "missionary",
+              "denomination", "jesus", "jesuits", "diocese", "buddhis", "cardinal") %>%
+  paste0(collapse = "|")
+
+politics <- c(
+  "diplomat", "elected", "nominee", "supreme court", "legislature", "mayor", "governor",
+  "vice President", "president", "representatives", "political", "department", "peace prize",
+  "ambassador", "government", "white house", "postal", "federal", "union", "trade",
+  "delegate", "alder", "solicitor", "senator", "intelligience", "combat", "commissioner",
+  "state", "first lady", "cabinet", "advisor", "guard", "coast", "secretary", "senate",
+  "house", "agency", "staff", "national committee", "lie in honor"
+) %>%
+  paste0(collapse = "|")
+
+sports <- c(
+  "baseball", "football", "basketball", "hockey", "golf", "tennis",
+  "championship", "boxing", "games", "medal", "game", "sport", "olympic", "nascar",
+  "coach", "trophy", "nba", "nhl", "nfl", "mlb", "stanley cup", "jockey", "pga",
+  "race", "driver", "ufc", "champion", "highest finishing position"
+) %>%
+  paste0(collapse = "|")
+
+military <- c(
+  "serve", "military", "enlist", "officer", "army", "marine", "naval",
+  "officer", "captain", "command", "admiral", "prison", "navy", "general",
+  "force"
+) %>%
+  paste0(collapse = "|")
+
+law <- c("american bar", "lawyer", "police", "judge", "attorney", "law", 
+         "agent", "fbi") %>%
+  paste0(collapse = "|")
+
+arts <- c(
+  "opera", "sing", "perform", "music", "billboard", "oscar", "television",
+  "movie", "network", "tony award", "paint", "author", "book", "academy award", "curator",
+  "director", "publish", "novel", "grammy", "emmy", "smithsonian",
+  "conduct", "picture", "pulitzer", "channel", "villain", "cartoon", "tv", "golden globe",
+  "comic", "magazine", "superhero", "pulitzer", "dancer", "opry", "rock and roll", "radio",
+  "record") %>%
+  paste0(collapse = "|")
+
+social <- c("community", "freemasons", "vote", "voting", "rights", "signature", 
+            "royal", "ceo", "community", "movement", "invited", "greek", "million",
+            "billion", "attendant", "chess", "pilot", "playboy", "own", "daughter",
+            "coin", "dollar", "stamp", "niagara", "pharmacist",
+            "stock", "north pole", "reporter", "sail around the world", "sail solo around the world", "press", "miss ",
+            "everest")  %>%
+  paste0(collapse = "|")
+
+first_df <- clean_first %>% 
+  mutate(category = case_when(
+           str_detect(tolower(first), military) ~ "Military",
+           str_detect(tolower(first), law) ~ "Law",
+           str_detect(tolower(first), arts) ~ "Arts & Entertainment",
+           str_detect(tolower(first), social) ~ "Social & Jobs",
+           str_detect(tolower(first), religion) ~ "Religion",
+           str_detect(tolower(first), edu) ~ "Education & Science",
+           str_detect(tolower(first), politics) ~ "Politics",
+           str_detect(tolower(first), sports) ~ "Sports",
+           TRUE ~ NA_character_
+         )) %>% 
+  rename(accomplishment = first)
+
+```
+
+
+
+
 
