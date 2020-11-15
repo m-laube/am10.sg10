@@ -1,0 +1,28 @@
+---
+title: "Wrangling and Testing"
+author: "Study Group 10"
+date: "15/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = TRUE)
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r libraries, include=FALSE}
+
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+
+loadfonts(device="win")
+
+```
+
