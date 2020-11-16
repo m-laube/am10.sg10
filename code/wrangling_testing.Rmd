@@ -22,6 +22,7 @@ library(extrafont)
 library(ggtext)
 library(lubridate)
 library(rvest)
+library(parsedate)
 
 loadfonts(device="win")
 
@@ -37,6 +38,8 @@ firsts <- read_csv(here("../data/firsts.csv"))
 science <- read_csv(here("../data/science.csv"))
 
 ```
+
+## Playing around
 
 Maybe use "gender" package on the first name!
 
@@ -62,7 +65,7 @@ library(rvest)
 
 # write as function --> extract_infobox --> map --> then unnest
 read_html("https://en.wikipedia.org/wiki/David_Blackwell") %>% 
-  html_node(".vcard") %>% 
+  html_node("table.vcard") %>% 
   html_table(header = FALSE)
 
 
@@ -77,9 +80,11 @@ science %>%
 ```
 
 
-# Rescraping the firsts
+## Rescraping the firsts
 
 ```{r}
+
+# code adapted from https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-06-09
 
 first_url <- "https://en.wikipedia.org/wiki/List_of_African-American_firsts"
 
@@ -98,15 +103,26 @@ get_first <- function(id_num){
 }
 
 extract_website <- function(x) {
-  str_replace(str_extract(str_extract(str_replace(x, ":.*?<a", ": <a"), ": <a href=\\\".*?\\\""), "/wiki.*?\\\""), "\\\"", "")
+  x %>% 
+    str_replace(":.*?<a", ": <a") %>% 
+    str_extract(": <a href=\\\".*?\\\"") %>% 
+    str_extract("/wiki.*?\\\"") %>% 
+    str_replace("\\\"", "")
 }
 
 extract_first <- function(x) {
-  str_replace(str_extract(x, "^First.*?:"), ":", "")
+  x %>% 
+    str_extract("^First.*?:") %>% 
+    str_replace(":", "")
 }
 
 extract_name <- function(x) {
-  str_replace(str_replace(str_extract(str_extract(str_replace(x, ":.*?<a", ": <a"), ": <a href=\\\".*?\\\">"), "title=.*\\\">"), "title=\\\"", ""), "\\\">", "")
+  x %>% 
+    str_replace(":.*?<a", ": <a") %>% 
+    str_extract(": <a href=\\\".*?\\\">") %>% 
+    str_extract("title=.*\\\">") %>% 
+    str_replace("title=\\\"", "") %>% 
+    str_replace("\\\">", "")
 }
 
 raw_first_df <- tibble(id_num = 1:409) %>% 
@@ -117,11 +133,11 @@ clean_first <- raw_first_df %>%
   mutate(year = as.integer(year)) %>% 
   fill(year) %>% 
   unnest(data) %>% 
-  mutate(data_string_raw = map(data, toString),
-         data_string_cle = map(data, html_text)) %>% 
-  mutate(wiki = map(data_string_raw, extract_website),
-         first = map(data_string_cle, extract_first),
-         name = map(data_string_raw, extract_name))
+  mutate(data_string_raw = map_chr(data, toString),
+         data_string_cle = map_chr(data, html_text)) %>% 
+  mutate(wiki = map_chr(data_string_raw, extract_website),
+         first = map_chr(data_string_cle, extract_first),
+         name = map_chr(data_string_raw, extract_name))
 
 edu <- paste0(c(
   "practice", "graduate", "learning", "college", "university", "medicine",
@@ -192,7 +208,85 @@ first_df <- clean_first %>%
            str_detect(tolower(first), sports) ~ "Sports",
            TRUE ~ NA_character_
          )) %>% 
+  drop_na() %>% 
   rename(accomplishment = first)
+
+# clean up variables
+rm(arts, edu, law, first_url, military, politics, religion, social, sports,
+   extract_first, extract_name, extract_website, get_first, get_year, raw_first, raw_first_df, clean_first)
+
+```
+
+
+## Augmenting the firsts with bday and location
+
+```{r}
+
+extract_bday_location <- function(wiki){
+  
+  html <- read_html(paste0("https://en.wikipedia.org", wiki))
+  
+  # extract birthdays
+  
+  bd <- html %>% 
+    html_node(glue::glue('span[class="bday"]')) %>% 
+    html_text()
+  
+  if(is.na(bd)){
+    
+    bd <- html %>% 
+      html_node("table.vcard") %>% 
+      toString() %>% 
+      str_replace_all("\\n", "") %>% 
+      str_extract("Born.*?</td>") %>% 
+      str_extract("<td>.*?<") %>% 
+      str_replace("<td>", "") %>% 
+      str_replace("<", "")
+      
+    bd <- bd %>% 
+      str_replace("\\(.*", "") %>% 
+      str_trim() %>% 
+      str_replace_all("[^[:alnum:] ]", "") %>% 
+      parse_date(approx = TRUE)
+  }
+  
+  if(!is.na(bd)){
+    bd <- toString(bd)
+  }
+  
+  
+  # extract locations
+  
+  lo <- html %>% 
+    html_node("table.vcard") %>% 
+    toString() %>% 
+    str_replace_all("\\n", "") %>% 
+    str_extract("Born.*?</td>") %>% 
+    str_replace("Born</th>", "")
+    
+    if(length(str_locate_all(lo, "<br>")[[1]]) == 4){
+      lo <- str_replace(lo, "<br>", "")
+    }
+    
+    lo <- lo %>% str_extract("<br><.*?</td>$")
+    
+    if(!is.na(lo)){
+      lo <- lo %>% 
+        read_html() %>% 
+        html_text()
+    }
+    
+  return(list(bd, lo))
+
+  
+}
+
+
+first_df_augmented <- suppressMessages(first_df %>% 
+  mutate(combi = map(wiki, extract_bday_location)) %>% 
+  unnest_wider(combi) %>% 
+  rename(bday = `...1`, location = `...2`) %>% 
+  mutate(bday = map_chr(bday, function(x) x)))
 
 ```
 
