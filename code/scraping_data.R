@@ -1,18 +1,3 @@
----
-title: "Wrangling and Testing"
-author: "Study Group 10"
-date: "15/11/2020"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(warning = TRUE)
-options(dplyr.summarise.inform = FALSE)
-```
-
-```{r libraries, include=FALSE}
-
 library(tidyverse)
 library(vroom)
 library(janitor)
@@ -25,67 +10,13 @@ library(rvest)
 library(parsedate)
 library(opencage)
 library(gender)
-#install.packages("genderdata", repos = "http://packages.ropensci.org")
 
-loadfonts(device="win")
-
-```
-
-# Celebrating Black Lives
-
-## Load Data
-
-```{r load raw}
-
-firsts <- read_csv(here("../data/firsts.csv"))
-science <- read_csv(here("../data/science.csv"))
-
-```
-
-## Playing around
-
-Maybe use "gender" package on the first name!
-
-```{r science data}
-
-science %>% 
-  separate_rows(occupation_s, sep = "; ") %>% 
-  mutate(occupation = str_to_title(occupation_s)) %>% 
-  count(occupation, sort = TRUE)
+# in this file, we scrape the data for the "firsts"
+# we crawl several wikipedia pages, use opencage to find geolocations,
+# and the gender package to infer sex
 
 
-science %>% 
-  filter(str_detect(occupation_s, regex("statistician", ignore_case = TRUE))) %>% 
-  pull(links)
-
-```
-
-scrape wikipedia
-
-```{r}
-
-library(rvest)
-
-# write as function --> extract_infobox --> map --> then unnest
-read_html("https://en.wikipedia.org/wiki/David_Blackwell") %>% 
-  html_node("table.vcard") %>% 
-  html_table(header = FALSE)
-
-
-
-# for production:
-science %>% 
-  sample_n(10) %>% 
-  mutate(html = map(links, read_html))
-
-
-
-```
-
-
-## Rescraping the firsts
-
-```{r}
+### RESCRAPING FIRSTS ###
 
 # code adapted from https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-06-09
 
@@ -95,8 +26,8 @@ raw_first <- read_html(first_url)
 
 get_year <- function(id_num){
   raw_first %>% 
-  html_nodes(glue::glue("#mw-content-text > div > h4:nth-child({id_num}) > span.mw-headline")) %>% 
-  html_attr("id")
+    html_nodes(glue::glue("#mw-content-text > div > h4:nth-child({id_num}) > span.mw-headline")) %>% 
+    html_attr("id")
 }
 
 get_first <- function(id_num){
@@ -201,16 +132,16 @@ social <- c("community", "freemasons", "vote", "voting", "rights", "signature",
 
 first_df <- clean_first %>% 
   mutate(category = case_when(
-           str_detect(tolower(first), military) ~ "Military",
-           str_detect(tolower(first), law) ~ "Law",
-           str_detect(tolower(first), arts) ~ "Arts & Entertainment",
-           str_detect(tolower(first), social) ~ "Social & Jobs",
-           str_detect(tolower(first), religion) ~ "Religion",
-           str_detect(tolower(first), edu) ~ "Education & Science",
-           str_detect(tolower(first), politics) ~ "Politics",
-           str_detect(tolower(first), sports) ~ "Sports",
-           TRUE ~ NA_character_
-         )) %>% 
+    str_detect(tolower(first), military) ~ "Military",
+    str_detect(tolower(first), law) ~ "Law",
+    str_detect(tolower(first), arts) ~ "Arts & Entertainment",
+    str_detect(tolower(first), social) ~ "Social & Jobs",
+    str_detect(tolower(first), religion) ~ "Religion",
+    str_detect(tolower(first), edu) ~ "Education & Science",
+    str_detect(tolower(first), politics) ~ "Politics",
+    str_detect(tolower(first), sports) ~ "Sports",
+    TRUE ~ NA_character_
+  )) %>% 
   drop_na() %>% 
   rename(accomplishment = first)
 
@@ -218,12 +149,10 @@ first_df <- clean_first %>%
 rm(arts, edu, law, first_url, military, politics, religion, social, sports,
    extract_first, extract_name, extract_website, get_first, get_year, raw_first, raw_first_df, clean_first)
 
-```
 
 
-## Augmenting the firsts with bday and location
 
-```{r}
+### AUGMENTING WITH BDAY AND LOCATION ###
 
 extract_bday_location <- function(wiki){
   
@@ -245,7 +174,7 @@ extract_bday_location <- function(wiki){
       str_extract("<td>.*?<") %>% 
       str_replace("<td>", "") %>% 
       str_replace("<", "")
-      
+    
     bd <- bd %>% 
       str_replace("\\(.*", "") %>% 
       str_trim() %>% 
@@ -266,37 +195,36 @@ extract_bday_location <- function(wiki){
     str_replace_all("\\n", "") %>% 
     str_extract("Born.*?</td>") %>% 
     str_replace("Born</th>", "")
-    
-    if(length(str_locate_all(lo, "<br>")[[1]]) == 4){
-      lo <- str_replace(lo, "<br>", "")
-    }
-    
-    lo <- lo %>% str_extract("<br><.*?</td>$")
-    
-    if(!is.na(lo)){
-      lo <- lo %>% 
-        read_html() %>% 
-        html_text()
-    }
-    
+  
+  if(length(str_locate_all(lo, "<br>")[[1]]) == 4){
+    lo <- str_replace(lo, "<br>", "")
+  }
+  
+  lo <- lo %>% str_extract("<br><.*?</td>$")
+  
+  if(!is.na(lo)){
+    lo <- lo %>% 
+      read_html() %>% 
+      html_text()
+  }
+  
   return(list(bd, lo))
-
+  
   
 }
 
 
 first_df_augmented <- suppressMessages(first_df %>% 
-  mutate(combi = map(wiki, extract_bday_location)) %>% 
-  unnest_wider(combi) %>% 
-  rename(bday = `...1`, location = `...2`) %>% 
-  mutate(bday = map_chr(bday, function(x) x))) %>% 
+                                         mutate(combi = map(wiki, extract_bday_location)) %>% 
+                                         unnest_wider(combi) %>% 
+                                         rename(bday = `...1`, location = `...2`) %>% 
+                                         mutate(bday = map_chr(bday, function(x) x))) %>% 
   mutate(bday = ifelse(year(bday) == 2020, NA_character_, bday))
 
-```
 
-## Augmenting the firsts with gender and geocodes
 
-```{r}
+
+### AUGMENTING WITH GENDER ###
 
 # add gender
 
@@ -316,20 +244,20 @@ get_gender <- function(name, year){
   
   # get first name
   name <- strsplit(name, split = " ")[[1]][1]
-    
+  
   method = ifelse(year < 1930, "ipums", "ssa")
-
+  
   ret <- gender(name, method = method, countries = "United States") %>% 
     select(gender) %>% 
     pull()
-
+  
   if(typeof(ret) == "logical"){
     return(NA_character_)
   }
   else{
     return(ret)
   }
-
+  
 }
 
 
@@ -341,10 +269,8 @@ first_df_augmented <- first_df_augmented %>%
 
 
 
-```
 
-
-```{r}
+### AUGMENTING WITH GEOLOCATION ###
 
 # add lng / lat, i.e. geocode locations
 
@@ -358,20 +284,28 @@ opencage_custom <- function(x) {
 }
 
 first_df_augmented <- suppressMessages(first_df_augmented %>% 
-  mutate(location_geo = map(location, opencage_custom)) %>% 
-  unnest_wider(location_geo) %>% 
-  unnest(results, keep_empty = TRUE) %>% 
-  rename(lat = geometry.lat,
-         lng = geometry.lng,
-         country = components.country,
-         state = components.state,
-         county = components.county,
-         city = components.city,
-         FIPS_state = annotations.FIPS.state) %>% 
-  select(id_num, year, data, data_string_raw, data_string_cle, wiki, 
-         accomplishment, name, category, bday, gender, 
-         location, lat, lng, country, state, county, city, FIPS_state))
+                                         mutate(location_geo = map(location, opencage_custom)) %>% 
+                                         unnest_wider(location_geo) %>% 
+                                         unnest(results, keep_empty = TRUE) %>% 
+                                         rename(lat = geometry.lat,
+                                                lng = geometry.lng,
+                                                country = components.country,
+                                                state = components.state,
+                                                county = components.county,
+                                                city = components.city,
+                                                FIPS_state = annotations.FIPS.state) %>% 
+                                         select(id_num, year, data, data_string_raw, data_string_cle, wiki, 
+                                                accomplishment, name, category, bday, gender, 
+                                                location, lat, lng, country, state, county, city, FIPS_state))
 
-```
+write_csv(first_df_augmented, path = "firsts_augmented.csv")
+
+setwd("C:/Users/marco/Documents/GitHub/am10.sg10")
+getwd()
+
+first_df_augmented %>% 
+  select(name) %>% 
+  write_csv(path = "firsts_augmented.csv")
 
 
+write.csv(first_df_augmented, file = "firsts_augmented.csv")
