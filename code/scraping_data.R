@@ -294,18 +294,9 @@ first_df_augmented <- suppressMessages(first_df_augmented %>%
                                                 county = components.county,
                                                 city = components.city,
                                                 FIPS_state = annotations.FIPS.state) %>% 
-                                         select(id_num, year, data, data_string_raw, data_string_cle, wiki, 
+                                         select(id_num, year, data_string_raw, data_string_cle, wiki, 
                                                 accomplishment, name, category, bday, gender, 
                                                 location, lat, lng, country, state, county, city, FIPS_state))
 
 write_csv(first_df_augmented, path = "firsts_augmented.csv")
 
-setwd("C:/Users/marco/Documents/GitHub/am10.sg10")
-getwd()
-
-first_df_augmented %>% 
-  select(name) %>% 
-  write_csv(path = "firsts_augmented.csv")
-
-
-write.csv(first_df_augmented, file = "firsts_augmented.csv")
