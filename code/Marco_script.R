@@ -1,16 +1,4 @@
----
-title: "Marco"
-author: "Marco Laube"
-date: "25/11/2020"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r libraries, include=FALSE}
-
+# load libraries
 library(tidyverse)
 library(vroom)
 library(janitor)
@@ -23,36 +11,18 @@ library(urbnmapr)
 
 loadfonts(device="win")
 
-```
-
-# TO DOS:
-
-- agree on story line
-- agree on style and colors
-
-# The Data
-
-We analyze **African-American Firsts**, celebrating their achievements breaking the colour barrier across a wide range of topics.  
-The data was scraped from [Wikipedia](https://en.wikipedia.org/wiki/List_of_African-American_firsts) (see `scraping_data.R`).
-
-# Load the data
-
-```{r}
-
+# load data
 firsts <- read_csv(here("../data/firsts_augmented.csv"), 
                    col_types = cols(year = col_integer(), 
                                     id_num = col_integer())) %>% 
   clean_names()
 
+# glimpse at data
 glimpse(firsts)
 
-```
-
-# Visualise a Map
-
-```{r}
-
-# get / convert shapefiles
+###############################################################################
+## visualise data in a map
+###############################################################################
 
 states_sf <- get_urbn_map("states", sf = TRUE)
 states_sf$geometry
@@ -72,16 +42,12 @@ firsts_sf <- firsts %>%
            crs = st_crs(states_sf))
 firsts_sf$geometry
 
-# count how many achievers were born in each state
-states_sf <- states_sf %>%
-  mutate(count = lengths(
-    st_contains(states_sf, 
-                firsts_sf))) 
+firsts %>%
+  select(lng) %>% 
+  distinct() %>% 
+  arrange(lng)
 
-```
-```{r}
-
-# Visualise where Achievers where born in the US
+  
 ggplot() +
     # draw polygons from states shapefile
     geom_sf(data = states_sf, fill = "grey99", color = "black")+
@@ -99,11 +65,13 @@ ggplot() +
     # theme(strip.text = element_text(color = "white"))+
     NULL
 
-```
 
-```{r}
-
-# Visualise how many achievers were born in each state
+# count how many achievers were born in each state
+states_sf <- states_sf %>%
+  mutate(count = lengths(
+    st_contains(states_sf, 
+                firsts_sf))) 
+  
 
 ggplot(data = states_sf, aes(fill = count)) +
   geom_sf(color = "#04314D") +
@@ -115,6 +83,5 @@ ggplot(data = states_sf, aes(fill = count)) +
   theme(axis.text = element_blank()) +
   NULL
 
-```
 
 
