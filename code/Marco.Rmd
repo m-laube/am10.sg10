@@ -20,6 +20,8 @@ library(extrafont)
 library(ggtext)
 library(lubridate)
 library(urbnmapr)
+library(readxl)
+library(stringr)
 
 loadfonts(device="win")
 
@@ -79,6 +81,8 @@ states_sf <- states_sf %>%
                 firsts_sf))) 
 
 ```
+
+
 ```{r}
 
 # Visualise where Achievers where born in the US
@@ -117,4 +121,137 @@ ggplot(data = states_sf, aes(fill = count)) +
 
 ```
 
+```{r}
+
+# Timeline combined with a lesson in History
+# Inspiration:
+# https://www.history.com/topics/black-history/black-history-milestones
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1) +
+  geom_vline(xintercept = 1941, # WWII begining and aftermath
+             color = "#AD8C00", size=1) +
+  geom_vline(xintercept = 1963, # i have a dream / civil rights movement +  Civil Rights Act of 1964 + Fair Housing Act, .....
+             color = "#AD8C00", size=1) +
+  geom_vline(xintercept = 1986, # Oprah Winfrey start + Los Angeles Riots + Million Man March
+             color = "#AD8C00", size=1) +
+  geom_vline(xintercept = 2008, # President Barack Obama
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+# first plot
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+  
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1941, # WWII begining and aftermath
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1941, # WWII begining and aftermath
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1963, # i have a dream / civil rights movement +  Civil Rights Act of 1964 + Fair Housing Act, .....
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1941, # WWII begining and aftermath
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1963, # i have a dream / civil rights movement +  Civil Rights Act of 1964 + Fair Housing Act, .....
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1986, # Oprah Winfrey start + Los Angeles Riots + Million Man March
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1901, # Washington, Carver & Du Bois + NAACP + UNIA + Harlem Renaissance
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1941, # WWII begining and aftermath
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1963, # i have a dream / civil rights movement +  Civil Rights Act of 1964 + Fair Housing Act, .....
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 1986, # Oprah Winfrey start + Los Angeles Riots + Million Man March
+             color = "#AD8C00", size=1, alpha = 0.2) +
+  geom_vline(xintercept = 2008, # President Barack Obama
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+```
 
