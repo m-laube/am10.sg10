@@ -9,22 +9,123 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r}
+# load libraries
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+library(urbnmapr)
+library(readxl)
+library(stringr)
+library(ggnewscale)
+library(gganimate)
+library(animation)
+library(transformr)
+library(skimr)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+loadfonts(device="win")
 ```
 
-## Including Plots
+```{r}
+# load "firsts" data and clean column names
+firsts <- read_csv(here("../data/firsts_augmented.csv")) %>% 
+  clean_names()
+```
+# Glimpse and Skim the data
+```{r}
+glimpse(firsts)
 
-You can also embed plots, for example:
+skim(firsts)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+From this first analysis we see we're having quite a significant amount of missing values.
+
+Let's load the other data set before modifying anything from here
+
+#Loading population
+
+```{r}
+# load population data from 1790-2010 and clean names
+# source: https://conservancy.umn.edu/handle/11299/181605
+pop <- read_xlsx(here("../data/county2010_hist_pops.xlsx"), sheet = "c2010_hist_pops") %>% 
+  clean_names()
+
+```
+
+Data Discovery
+
+## Most firsts per state and distribution of firts
+```{r}
+
+states <- firsts %>% 
+  filter(!is.na(state)) %>% 
+  count(state) %>% 
+  mutate(tot  = sum(n), pct = n/sum(n)) %>% 
+  arrange(desc(n))
+
+ggplot(states, aes(n)) + 
+  geom_histogram()
+
+ggplot(states, aes(x = n, y = reorder(state, n))) +
+  geom_col() +
+  theme_classic()
+
+```
+
+Interesting stuff, we can see that there is a stark difference between state 36 (New York State) and state 27(Minnesota) we'll see later how these developed over time! (Why is Mexico in there?)
+
+## Gender and Category analysis
+
+```{r}
+## Gender count
+gender <- firsts %>% 
+  filter(!is.na(gender)) %>% 
+  count(gender) %>% 
+  mutate(tot = sum(n), pct = n/tot) %>% 
+  arrange(desc(n))
+
+ggplot(gender, aes(x = gender, y = n)) +
+  geom_col() +
+  theme_classic()
+# ADD PERCENTAGES
+
+## Category count
+category <- firsts %>% 
+  filter(!is.na(category)) %>% 
+  count(category) %>% 
+  mutate(tot = sum(n), pct = n/tot) %>% 
+  arrange(desc(n))
+
+ggplot(category, aes(x = n, y = reorder(category, -n))) +
+  geom_col() +
+  theme_classic()
+# ADD PERCENTAGES
+
+
+```
+
+# Time series
+```{r}
+#Changing the format of year column
+firsts$year  <- as.Date(as.character(firsts$year), "%Y")
+firsts$year <- year(firsts$year)
+
+
+
+str(firsts)
+
+#date_test <- c_d_clean %>% 
+#  mutate(day1 = day(date_rep))
+
+
+
+
+
+```
+
