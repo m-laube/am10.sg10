@@ -1,0 +1,121 @@
+---
+title: "DenizWork"
+author: "deniz oezdemir"
+date: "27 November 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load libraries
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+library(urbnmapr)
+library(readxl)
+library(stringr)
+library(ggnewscale)
+library(gganimate)
+library(animation)
+library(transformr)
+library(skimr)
+
+loadfonts(device="win")
+```
+
+
+```{r, include= FALSE}
+reorder_within <- function(x, by, within, fun = mean, sep = "___", ...) {
+  new_x <- paste(x, within, sep = sep)
+  stats::reorder(new_x, by, FUN = fun)
+}
+
+
+scale_x_reordered <- function(..., sep = "___") {
+  reg <- paste0(sep, ".+$")
+  ggplot2::scale_x_discrete(labels = function(x) gsub(reg, "", x), ...)
+}
+
+
+scale_y_reordered <- function(..., sep = "___") {
+  reg <- paste0(sep, ".+$")
+  ggplot2::scale_y_discrete(labels = function(x) gsub(reg, "", x), ...)
+}
+
+```
+
+```{r}
+# load "firsts" data and clean column names
+firsts <- read_csv(here("../data/firsts_augmented.csv")) %>% 
+  clean_names()
+
+# cut year into buckets for gganimate
+firsts <- firsts %>% 
+  mutate(year_2 = cut(year, 
+                      breaks = c(min(year)-1, c(seq(1790, 2020, 10))), 
+                      labels = c(seq(1790, 2020, 10)))) %>% 
+  mutate(year_2 = as.integer(levels(year_2))[year_2]) %>% 
+  mutate(year_full = year) %>%
+  mutate(year = year_2) %>% 
+  select(-year_2)
+```
+# Glimpse and Skim the data
+```{r}
+glimpse(firsts)
+
+skim(firsts)
+
+```
+
+
+
+# Gender Over the Years and categories
+
+```{r}
+
+gender_category_df<- firsts %>% 
+  filter(!is.na(gender)) %>% 
+  filter(!is.na(category)) %>% 
+  group_by(gender) %>% 
+  mutate(number_firsts= n()) %>% 
+  ungroup() %>% 
+  group_by(gender, category) %>% 
+  mutate(number_category_firsts= n(),
+         pct_category_firsts=number_category_firsts/ number_firsts) %>% 
+  select(gender,category,pct_category_firsts) %>% 
+  distinct() %>% 
+  arrange(desc(pct_category_firsts)) %>% 
+  mutate(category = fct_inorder(category))
+
+
+gender_category_df %>% 
+  ggplot(aes(y = pct_category_firsts, x = 
+               reorder_within(category,desc(pct_category_firsts),gender))) +
+  geom_col(width = 0.7)+
+  facet_wrap(~gender,scales="free")+
+  geom_text(
+    aes(label = paste(round(pct_category_firsts*100,1))), 
+    color = "white", 
+    size = 3,
+    vjust = 2
+  ) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent)+
+  scale_x_reordered()+
+    labs(
+    x= "Categories",
+    y="")+
+  theme(axis.text.x = element_text(angle = 90))
+
+#TODO: group by years and make animation!!!
+
+```
+

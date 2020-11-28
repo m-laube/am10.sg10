@@ -1,0 +1,364 @@
+---
+title: "Martino"
+author: "Martino Armanini"
+date: "26/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load libraries
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+library(urbnmapr)
+library(readxl)
+library(stringr)
+library(ggnewscale)
+library(gganimate)
+library(animation)
+library(transformr)
+library(skimr)
+
+loadfonts(device="win")
+```
+
+```{r}
+# load "firsts" data and clean column names
+firsts <- read_csv(here("../data/firsts_augmented.csv")) %>% 
+  clean_names()
+```
+# Glimpse and Skim the data
+```{r}
+glimpse(firsts)
+
+skim(firsts)
+
+```
+
+From this first analysis we see we're having quite a significant amount of missing values.
+
+Let's load the other data set before modifying anything from here
+
+#Loading population
+
+```{r}
+# load population data from 1790-2010 and clean names
+# source: https://conservancy.umn.edu/handle/11299/181605
+pop <- read_xlsx(here("../data/county2010_hist_pops.xlsx"), sheet = "c2010_hist_pops") %>% 
+  clean_names()
+
+```
+
+Data Discovery
+
+# Time series
+```{r}
+
+firsts <- firsts %>% 
+  mutate(year_2 = cut(year, 
+                      breaks = c(min(year)-1, c(seq(1790, 2020, 10))), 
+                      labels = c(seq(1790, 2020, 10)))) %>% 
+  mutate(year_2 = as.integer(levels(year_2))[year_2]) %>% 
+  mutate(year_full = year) %>%
+  mutate(year = year_2) %>% 
+  select(-year_2)
+
+
+#Changing the format of year column
+firsts$year  <- as.Date(as.character(firsts$year), "%Y")
+firsts$year <- year(firsts$year)
+
+
+
+str(firsts)
+#date_test <- c_d_clean %>% 
+#  mutate(day1 = day(date_rep))
+
+
+
+
+time <- firsts %>% 
+  group_by(year) %>% 
+  count(year) %>% 
+  rename("n_first" = "n") %>% 
+  mutate(growth = ((42-9)/9)*100)
+
+time$growth <- paste(round(time$growth), "%", sep="")
+
+ggplot(time, aes(x = year, y = n_first)) +
+  geom_line() +
+  geom_point() +
+  geom_smooth(method= lm, se =F )
+#ADD Percentages
+
+label1 <- "Over the years, \n the first times by decade \n have increased by 367%"
+
+time_firsts <- time %>%
+ ggplot(aes(x = year, y = n_first, group = 1)) +
+ geom_line(colour = "aquamarine4", size = 1.2, lty = 2)+
+ geom_point(pch=16, size = 3, colour = "salmon")+
+ geom_smooth(method = lm, se = FALSE, colour = "Royalblue4") +
+ theme_bw()+
+ labs(colour = "stoppage",
+ title = "A positive growth of first times for African Americans",
+ subtitle = "The number of first times for the Black community in the US",
+ caption = "Source: XXXXX",
+ x = "",
+ y = "Number of firts") +
+  geom_text(
+    data = data.frame(x = 1875, y = 55, label = label1),
+    aes(x = x, y = y, label = label1),
+    colour="Royalblue4",
+    family="Times New Roman",
+    size = 5,
+    hjust = 0.5,
+    lineheight = .8,
+    inherit.aes = FALSE)+
+#  geom_text(
+#  data = data.frame(x = 26.6, y = 880, label = label),
+#  aes(x = x, y = y, label = label4),
+#  colour="salmon",
+#  family="Lato",
+#  size = 5,
+#  hjust = 0.5,
+#  lineheight = .8,
+#  inherit.aes = FALSE)+
+#  geom_text(
+#  data = data.frame(x = 5.5, y = 410, label = label),
+#  aes(x = x, y = y, label = label5),
+#  colour="darkgreen",
+#  family="Lato",
+#  size = 5,
+#  hjust = 0.5,
+#  lineheight = .8,
+#  inherit.aes = FALSE)+
+#  geom_text(
+#  data = data.frame(x = 23.4, y = 880, label = label),
+#  aes(x = x, y = y, label = label6),
+#  colour="darkgreen",
+#  family="Lato",
+#  size = 5,
+#  hjust = 0.5,
+#  lineheight = .8,
+#  inherit.aes = FALSE)+ # geom_curve(
+# # data = data.frame(x = 6000, y = 5.3, xend = 6500, yend = 7.5),
+# # mapping = aes(x = x, y = y, xend = xend, yend = yend),
+# # colour = "grey15",
+# # size = 0.5,
+# # curvature = 0.25,
+# # arrow = arrow(length = unit(2, "mm"), type = "closed"),
+# # inherit.aes = FALSE)+
+ theme_classic()+
+ theme(legend.position = "none",
+ plot.title = element_text(size = 20, face = "bold", colour = "aquamarine4"),
+ plot.subtitle = element_text(size = 15),
+ axis.title = element_text(size = 14),
+ axis.text.x = element_text(angle = 0,  hjust = 0.5, size = 14),
+ axis.text.y = element_text(angle = 0, hjust = 0.5, size = 14))
+
+
+time_firsts
+
+
+```
+
+
+## Most firsts per state and distribution of firts
+```{r}
+
+label2 <- "New York appears to be \n the most forward thinking state \n in the US with 8% \n of the total firsts"
+my_colours <- c("grey80", "dodgerblue1")
+
+states <- firsts %>% 
+  filter(!is.na(state)) %>% 
+  count(state) %>% 
+  mutate(tot  = sum(n), pct = n/sum(n)*100,
+         NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
+  filter(pct > 2) %>% 
+  arrange(desc(n))
+
+states$pct <- paste(round(states$pct), "%", sep="")
+  
+
+states <- states[-c(28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43),]
+
+ggplot(states, aes(n)) + 
+  geom_histogram()
+
+ggplot(states, aes(x = n, y = reorder(state, n))) +
+  geom_col() +
+  theme_classic()
+
+ggplot(states, aes(x =  n, 
+                     y = reorder(state, n), fill = NY)) + # reorder bars by beer servings
+  geom_col() + 
+  scale_fill_manual(values = my_colours) + 
+  # geom_text(
+  #   aes(label = n, x = n - .25),
+  #   colour = "red4",
+  #   size = 5,
+  #   nudge_x = 400,
+  #   nudge_y = 0,
+  #   hjust = 0.45,
+  #   family="Lato") +
+  geom_text(
+    aes(label = pct),
+    colour = "green4",
+    size = 6,
+    nudge_x = 1,
+    nudge_y = 0,
+    hjust = 0.5,
+    family="Lato")+
+  geom_text(
+    data = data.frame(x = 25, y = 9.5, label = label2),
+    aes(x = x, y = y, label = label2),
+    colour="dodgerblue1",
+    family="Lato",
+    size = 6,
+    hjust = 0.5,
+    lineheight = .8,
+    inherit.aes = FALSE)+
+  # geom_text(
+  #   data = data.frame(x = 2500, y = 0.75, label = label2),
+  #   aes(x = x, y = y, label = label2),
+  #   colour="green4",
+  #   family="Lato",
+  #   size = 4.5,
+  #   hjust = 0.5,
+  #   lineheight = .8,
+  #   inherit.aes = FALSE)+
+  geom_curve(
+    data = data.frame(x = 25, y = 10, xend = 30, yend = 19.2),
+    mapping = aes(x = x, y = y, xend = xend, yend = yend),
+    colour = "grey15",
+    size = 0.5,
+    curvature = 0.25,
+    arrow = arrow(length = unit(2, "mm"), type = "closed"),
+    inherit.aes = FALSE) +
+  labs(colour = "stoppage",
+       title = "The most liberal state takes the highest number of firsts",
+       subtitle = "Over time, New York State has outnumbered the other states",
+       caption = "Source: Data.Police.UK",
+       x = "Number of Stops and Searches in September 2020",
+       y = "") +
+  theme_classic()+
+  theme(legend.position = "none",
+        plot.title = element_text(size = 23, face = "bold", colour = "dodgerblue1"),
+        plot.subtitle = element_text(size = 15),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 0, hjust = 1, size = 14),
+        axis.text.y = element_text(angle = 0, hjust = 1, size = 14))
+
+
+
+
+```
+
+Interesting stuff, we can see that there is a stark difference between state 36 (New York State) and state 27(Minnesota) we'll see later how these developed over time! (Why is Mexico in there?)
+
+## Gender and Category analysis
+
+```{r}
+
+my_colours2 <- c("skyblue1", "palevioletred1")
+
+## Gender count
+gender <- firsts %>% 
+  filter(!is.na(gender)) %>% 
+  count(gender) %>% 
+  mutate(tot = sum(n), pct = n/tot*100, 
+         female = ifelse(`gender` == "female", TRUE, FALSE)) %>% 
+  arrange(desc(n))
+
+gender$pct <- paste(round(gender$pct), "%", sep="")
+
+ggplot(gender, aes(x = gender, y = n, fill = female)) + 
+  geom_col() +
+  scale_fill_manual(values = my_colours2) +
+   geom_text(
+    aes(label = pct),
+    colour = "Navyblue",
+    size = 12,
+    nudge_x = 0,
+    nudge_y = 12,
+    hjust = 0.5,
+    family = "Lato") +
+  theme_classic()+
+    labs(colour = "gender",
+       title = "Sexism is part of African American History",
+       subtitle = "Males have been first more than 60% of the time",
+       caption = "Source: XXXX",
+       x = "Gender",
+       y = "Number of firsts by gender") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 30, face = "bold", colour = "Navyblue"),
+        plot.subtitle = element_text(size = 15),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 0, hjust = 0.5, size = 14),
+        axis.text.y = element_text(angle = 0, hjust = 1, size = 14))
+  
+
+
+## Category count
+category <- firsts %>% 
+  filter(!is.na(category)) %>% 
+  count(category) %>% 
+  mutate(tot = sum(n), pct = n/tot*100) %>% 
+  arrange(desc(n))
+  
+
+ggplot(category, aes(x = n, y = reorder(category, -n), fill = n)) +
+  geom_col() +
+  scale_fill_gradient(low = "red3", high = "navy") +
+   theme_classic()+
+    labs(colour = "gender",
+       title = "Law and Religion are the most conservative areas",
+       subtitle = "First times for African American by category",
+       caption = "Source: XXXX",
+       x = "",
+       y = "") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 30, face = "bold", colour = "Navyblue"),
+        plot.subtitle = element_text(size = 15),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 0, hjust = 0.5, size = 14),
+        axis.text.y = element_text(angle = 0, hjust = 1, size = 14))
+  
+# ADD PERCENTAGES
+
+
+```
+
+
+# US Map
+```{r}
+ggplot() +
+  # draw polygons from states shapefile
+  geom_sf(data = states_sf, fill = "grey99", color = "black")+
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_sf, aes(fill = gender), size = 2, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#000461", "#AD8C00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+```
+
+
+
+
