@@ -5,24 +5,263 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(cluster)
+library(Hmisc)
+library(factoextra)
+library(purrr)
+library(gridExtra)
+library('ggplot2')
+library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(GGally)
+library(dplyr)
+library(readxl)
+library(here)
+library(skimr)
+library(janitor)
+library(broom)
+library(tidyquant)
+library(infer)
+library(openintro)
+library(kableExtra)
+library(vroom)
+library(leaflet)
+library(moderndive)
+library(car)
+library(huxtable)
+library(caret)
+library(sf) # for geospatial visualisation
+library(rsample)
+library(extrafont)
+library(vroom)
+library(ggtext)
+library(gapminder)
+library(ggrepel)
+library(patchwork)
+library(gghighlight)
+library(skimr)
+library(ggplot2)
+library(lubridate)
+library(plotly)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+load the data
+```{r}
+library(readr)
+firsts<- read_csv("~/GitHub/am10.sg10/data/firsts_augmented.csv")
+#glimpse(firsts)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+firsts <- firsts %>% filter( country == "United States of America")
+describe(firsts)
+```
+Load map data and join to firsts data
+```{r}
+library(urbnmapr)
 
-```{r cars}
-summary(cars)
+counties_sf <- get_urbn_map("counties", sf = TRUE)
+
+class(counties_sf)
+counties_sf$geometry
+
+#counties_sf %>% 
+#  ggplot(aes()) +
+#  geom_sf(fill = "grey70", color = "#ffffff")
+  
+firsts_joined<- left_join(counties_sf, firsts, by = c("county_fips" =  "FIPS_state"))
+#firsts_sf = subset(firsts_sf, select = -c(state_name , fips_class,county_name,state_fips ,state_abbv))
+
+firsts_joined_sf <-  st_as_sf(firsts_joined, 
+                              coords=c('lng', 'lat'), 
+                              crs = 4326)  
+
+
+
+firsts_joined_sf_statecount <- firsts_joined_sf%>% group_by(state_name)%>% mutate(countrow = n())
+
+#skimr::skim(firsts_joined_sf)
+
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# plot for challenge 1 
+
+```{r}
+plot1 <-   
+    ggplot(data=firsts_joined_sf_statecount )+
+    geom_sf( fill = "grey70", colour = "white")+
+    geom_sf(
+      aes(fill = countrow)
+    )+
+    geom_sf_text(data = get_urbn_labels(map = "states", sf = TRUE), 
+                 aes(label = state_abbv), 
+                 size = 5,
+                 family="Lato") +
+    theme_void()+
+  #facet_wrap(~gender)+
+    labs(
+      title = "Number of firsts per state",
+      #subtitle = "US Presidential Election 2020",
+      #caption = "Data Source: New York Times",
+      x=NULL, y=NULL
+    )+
+    theme(text=element_text(size=12, family="Lato"))+
+    theme(plot.title.position = "plot")+
+    NULL
+plot1
+
+firsts_county_tex <- firsts %>%filter(state == 'Texas') %>% group_by(county)%>% mutate((countrow = n()))
+class(firsts_county_tex)
+view(firsts_county_tex)
+
+#data.frame(rbind(firsts_county_tex)) 
+#class(firsts_county_tex)
+
+plot3 <- firsts_county_tex %>%
+  ggplot(aes(y= county)) + geom_histogram(stat="count")
+#view(firsts_county_tex)
+plot3
+#viz 1
+
+firsts %>% ggplot(aes(year)) + geom_histogram()
+
+#viz 2
+
+firsts %>% ggplot(aes(year)) + 
+  geom_histogram()+
+  facet_wrap(~ category)
+
+#viz 3
+
+g2 <-firsts%>% count(category, sort= TRUE) %>%
+  mutate(category= fct_reorder(category,n))%>%
+  ggplot(aes(n, category))+ 
+  geom_col()
+ggplotly(g2)
+
+
+
+#view(firsts_joined_sf)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+g <- firsts%>%
+  filter( state == "Texas") %>%
+  ggplot(aes(year,category, 
+             color = category,
+             text = paste(accomplishment,":", name))) +
+  geom_point() +
+  #facet_wrap(~gender)+
+  #scale_y_continuous()+
+  labs(y= "")+
+  theme( #axis.text.y = element_blank(), 
+         panel.grid.major.y = element_blank(),
+         axis.ticks.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         legend.position = "none")+
+  labs(caption =    "the firsts begin a 4 years after the 1917 roit of houston,
+       Racial desegregation of the Houston Independent School District (HISD), resulting from the Civil Rights Movement in the 1950s and 1960s,[70] occurred in the 1970s")
+   #g       
+
+  ggplotly(g)
+  
+  describe(firsts$lat)
+  
+
+```
+
+```{r}
+plot_2 <-  firsts%>% filter(gender == 'female') %>%
+  ggplot(aes(year,category, 
+             color = category,
+             text = paste(accomplishment,":", name))) +
+  geom_point() +
+  #facet_wrap(~gender)+
+  #scale_y_continuous()+
+  labs(y= "")+
+  theme( #axis.text.y = element_blank(), 
+         panel.grid.major.y = element_blank(),
+         axis.ticks.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         legend.position = "none")
+
+ggplotly(plot_2)
+ 
+ plot_7 <-  firsts%>% 
+   #filter(gender == 'female') %>%
+   ggplot(aes(x=year)) + geom_density()+ facet_wrap(~gender)
+ plot_7
+
+```
+```{r}
+West = c("California", "Oregon","Washington", "Nevada", "Idaho", "Utah", "Arizona", "Montana", "Alaska", "Hawaii")
+
+library(dplyr)
+
+
+plot_17 <-firsts%>% filter(state %in% West) %>%
+  ggplot(aes(year,category, 
+             color = category))+
+             #text = paste(accomplishment,":", name))) +
+  geom_point() +
+  #facet_wrap(~gender)+
+  #scale_y_continuous()+
+  labs(y= "", title = " west coast")+
+   xlim(1800, 2025)+
+  theme( #axis.text.y = element_blank(), 
+         panel.grid.major.y = element_blank(),
+         axis.ticks.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         legend.position = "none")
+
+ggplotly(plot_17)
+
+
+
+Central= c("Wyoming", "Colorado", "New Mexico", "North Dakota", "South Dakota", "Nebraska", "Kansas", "Oklahoma", "Texas", "Minnesota", "Iowa", "Missouri", "Arkansas", "Louisiana", "Wisconsin", "Illinois", "Mississippi")
+
+plot_18 <-firsts%>% filter(state %in% Central) %>%
+  ggplot(aes(year,category, 
+             color = category))+
+             #text = paste(accomplishment,":", name))) +
+  geom_point() +
+  #facet_wrap(~gender)+
+  #scale_y_continuous()+
+  labs(y= "", title = " Central")+
+  xlim(1800, 2025)+
+  theme( #axis.text.y = element_blank(), 
+         panel.grid.major.y = element_blank(),
+         axis.ticks.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         legend.position = "none")
+
+ggplotly(plot_18)
+
+East= c("Michigan", "Indiana", "Kentucky", "Tennessee", "Alabama", "Ohio", "Georgia", "Florida", "South Carolina", "North Carolina", "Virginia", "West Virginia", "Delaware", "Maryland", "New Jersey", "Pennsylvania", "New York", "Connecticut", "Rhode Island", "Massachusetts", "Vermont", "New Hampshire", "Maine")
+
+plot_19 <-firsts%>% filter(state %in% East) %>%
+  ggplot(aes(year,category, 
+             color = category))+
+             #text = paste(accomplishment,":", name))) +
+  geom_point() +
+  xlim(1800, 2025)+
+  #facet_wrap(~gender)+
+  #scale_y_continuous()+
+  labs(y= "", title = " East")+
+  theme( #axis.text.y = element_blank(), 
+         panel.grid.major.y = element_blank(),
+         axis.ticks.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         legend.position = "none")
+
+ggplotly(plot_19)
+
+grid.arrange(plot_17,plot_18, plot_19, ncol=1)
+
+```
+
