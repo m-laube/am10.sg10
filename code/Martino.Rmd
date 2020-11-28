@@ -341,6 +341,58 @@ ggplot(category, aes(x = n, y = reorder(category, -n), fill = n)) +
 
 # US Map
 ```{r}
+
+# load states shapefile
+states_sf <- get_urbn_map("states", sf = TRUE)
+states_sf$geometry
+
+# load counties shapefile
+counties_sf <- get_urbn_map("counties", sf = TRUE)
+counties_sf$geometry
+
+
+# transfrom geometry to 4326, or pairs of latitude/longitude numbers
+states_sf <-  states_sf %>% 
+  st_transform(4326) # transfrom to WGS84, latitude/longitude
+states_sf$geometry
+
+# transfrom geometry to 4326, or pairs of latitude/longitude numbers
+counties_sf <-  counties_sf %>% 
+  st_transform(4326) # transfrom to WGS84, latitude/longitude
+counties_sf$geometry
+
+
+# join counties_sf and population data
+counties_pop_sf <- counties_sf %>% 
+  left_join(pop, by = c("county_fips" = "geoid10"))
+
+
+# convert firsts to a sf object
+firsts_sf <- firsts %>% 
+  drop_na(lng, lat, gender) %>% 
+  filter(country == "United States of America") %>% 
+  # filter irrelevant lng/lat
+  filter(lng > -140) %>% 
+  st_as_sf(coords = c('lng', 'lat'), 
+           crs = st_crs(states_sf))
+firsts_sf$geometry
+
+# convert firsts to a sf object with jitter on coordinates
+# jitter points such that they are better visible
+set.seed(100)
+firsts_sf_jitter <- firsts %>% 
+  drop_na(lng, lat, gender) %>% 
+  mutate(lng = jitter(lng, amount = 1),
+         lat = jitter(lat, amount = 1)) %>% 
+  filter(country == "United States of America") %>% 
+  # filter irrelevant lng/lat
+  filter(lng > -140) %>% 
+  st_as_sf(coords = c('lng', 'lat'), 
+           crs = st_crs(states_sf))
+firsts_sf_jitter$geometry
+
+
+
 ggplot() +
   # draw polygons from states shapefile
   geom_sf(data = states_sf, fill = "grey99", color = "black")+
@@ -349,7 +401,7 @@ ggplot() +
     data = firsts_sf, aes(fill = gender), size = 2, shape = 21,
     show.legend = TRUE
   ) + 
-  scale_fill_manual(values = c("#000461", "#AD8C00")) +
+  scale_fill_manual(values = c("palevioletred1", "skyblue1")) +
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
   labs(title = "Most achievers were born in the East!") +
@@ -357,6 +409,10 @@ ggplot() +
   theme(axis.text = element_blank()) +
   # theme(strip.text = element_text(color = "white"))+
   NULL
+```
+
+```{r}
+
 ```
 
 

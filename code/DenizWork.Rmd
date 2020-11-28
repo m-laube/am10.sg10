@@ -80,7 +80,6 @@ skim(firsts)
 # Gender Over the Years and categories
 
 ```{r}
-
 gender_category_df<- firsts %>% 
   filter(!is.na(gender)) %>% 
   filter(!is.na(category)) %>% 
