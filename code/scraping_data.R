@@ -187,7 +187,7 @@ rm(arts, edu, law, first_url, military, politics, religion, social, sports,
 
 ################################################################################
 # AUGMENTING WITH BDAY AND LOCATION
-# We no parse the wikipedia page of the persons, that have achieved the "firsts"
+# We now parse the wikipedia page of the persons, that have achieved the "firsts"
 # to get information about their location and birthday
 ################################################################################
 
