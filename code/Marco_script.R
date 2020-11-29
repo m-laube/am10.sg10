@@ -14,13 +14,27 @@ library(ggnewscale)
 library(gganimate)
 library(animation)
 library(transformr)
+library(tidyquant)
 
 loadfonts(device="win")
 
 # TODO: build story around the histogram & around the maps
 # TODO: tune the visualisations to look great
-# TODO: maybe some confidence intervals?!
+# TODO: maybe some confidence intervals, time series analysis?!
 
+# Story 1: connection of historic events and african-american "firsts"
+
+# Story 2: Most achievers were born in the east --> connection with population
+# density and "going west"!
+
+# Story 3: Gender Gap?!
+
+# we need at least 3 different chart types!
+# map, histogram (see below)
+# additionally boxplots / confidence intervals for category / gender?
+# time series charts?
+
+# presentation: 8-10 slides of main findings
 
 ###############################################################################
 ## Load and transform data
@@ -588,3 +602,69 @@ firsts %>%
   geom_bar() +
   coord_flip() +
   theme_minimal()
+
+
+###############################################################################
+## Try to use some statistical and/or ML modelling techniques
+###############################################################################
+
+# time series analysis --> number of "firsts" per year
+
+# cut year into same buckets as histogram above
+firsts_test <- firsts %>% 
+  mutate(year_2 = cut(year_full, 
+                      breaks = c(min(year_full)-1, c(seq(1751, 2021, 5))), 
+                      labels = c(seq(1751, 2021, 5)),
+                      ordered_result = TRUE)) %>% 
+  mutate(year_2 = as.integer(levels(year_2))[year_2]) #%>% 
+  #mutate(year_full = year) %>%
+  #mutate(year = year_2) %>% 
+  #select(-year_2)
+
+firsts_test <- firsts_test %>% 
+  count(year_2)
+
+empty_values <- tribble(
+  ~year_2, ~n,
+  1756,   0,
+  1766,   0,
+  1791,   0,
+  1801,   0,
+  1811,   0,
+)
+
+firsts_test <- bind_rows(firsts_test, empty_values) %>% 
+  arrange(year_2)
+
+rm(empty_values)
+
+# Use local polynomial regression fitting
+# LOESS = locally estimated scatterplot smoothing
+
+firsts_test %>% 
+  ggplot(aes(x = year_2, y = n)) +
+  geom_col() +
+  #geom_line(color = "#000461", size = 2) +
+  #geom_ma(ma_fun = EMA, n = 5, linetype = "solid", color = "#000461", size = 2) +
+  geom_smooth(method = "loess", se = FALSE, color = "#000461", size = 2) + 
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+
+# time series decomposition
+
+library(forecast)
+
+firsts_test_ts <- ts(firsts_test$n, start = 1751, end = 2021, deltat = 5)
+
+ts(firsts_test$n, deltat = 1/2) %>% 
+  decompose("additive") %>% 
+  autoplot()
+
+stl(firsts_test_ts_2)
+
+# confidence intervals for male / female per category
