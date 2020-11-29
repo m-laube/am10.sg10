@@ -116,5 +116,39 @@ gender_category_df %>%
 
 #TODO: group by years and make animation!!!
 
+
+male_label <- gender_category_df %>% 
+  filter(gender=="male") %>% 
+  summarize(male_label=round(pct_category_firsts*100,1)) %>% 
+  select(male_label)
+
+gender_category_df %>% 
+  ggplot(aes(y = pct_category_firsts, x = 
+               reorder(category,desc(pct_category_firsts)),fill=gender)) +
+  geom_col(width = 0.7, position='dodge')+
+  geom_text(
+    aes(label = ifelse(gender=="male",paste(round(pct_category_firsts*100,1)),"")), 
+    color = "white", 
+    size = 2.5,
+    vjust = 3,
+    hjust=-0.1
+  ) +
+  geom_text(
+    aes(label = ifelse(gender=="female",paste(round(pct_category_firsts*100,1)),"")), 
+    color = "white", 
+    size = 2.5,
+    vjust = 3,
+    hjust=1.1
+  ) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent)+
+ # scale_x_reordered()+
+    labs(
+      title="Firsts by Gender and Category",
+    x= "",
+    y="")+
+  theme(axis.text.x = element_text(angle = 90))
+
+
 ```
 
