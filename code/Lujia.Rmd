@@ -9,22 +9,176 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+library(skimr)
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+library(readxl)
+library(stringr)
+library(ggnewscale)
+library(gganimate)
+library(animation)
+library(transformr)
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+library(readr)
+firsts_augmented <- read_csv("~/GitHub/am10.sg10/data/firsts_augmented.csv")
+skim(firsts_augmented)
+glimpse(firsts_augmented)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## grow over time, male sightly more than female
+
+```{r}
+
+firsts_augmented <- firsts_augmented %>% 
+  mutate(year_bins = as.numeric(as.character(
+           cut(year, 
+               breaks=c(min(year)-1,c(seq(1790, 2020, 10))), 
+               labels=c(seq(1790, 2020, 10))))
+           ))
+
+sex_count <- firsts_augmented %>%
+  filter(!is.na(gender),
+         !is.na(year_bins)) %>% 
+  group_by(year_bins, gender) %>% 
+  count() %>% 
+  arrange(year_bins)
+
+sex_count %>% 
+  ggplot(aes(x = year_bins, y = n, color = gender)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "",
+     subtitle = "",
+     x = "Year",
+     y = "Number of Firsts",
+     caption = "") +
+  NULL
+
+sex_count_wider <- sex_count %>% 
+  pivot_wider(names_from = gender, values_from = n) %>% 
+  mutate(middle = ifelse(female>male,male,female))
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins)) +
+  geom_line(aes(y = female), group = 1, size = 1, color = "pink") +
+  geom_line(aes(y = male), group = 1, size = 1, color = "skyblue") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  theme_minimal() +
+  labs(title = "",
+     subtitle = "",
+     x = "Year",
+     y = "Number of Firsts",
+     caption = "") +
+  NULL
+
+
+```
+
+
+
+## some category changed more; the areas where female are less than male are - education&science, military, and sports
+
+```{r}
+
+firsts_augmented %>%
+  filter(!is.na(gender)) %>% 
+  group_by(year_bins, category) %>% 
+  count() %>% 
+  ggplot(aes(x = year_bins, y = n, color = category)) +
+  geom_line() +
+  theme_minimal() +
+    theme(legend.position="none") +
+  labs(title = "",
+     subtitle = "",
+     x = "Year",
+     y = "Number of Firsts",
+     caption = "") +
+  facet_wrap(~category) +
+  NULL
+
+firsts_augmented %>%
+  filter(!is.na(gender)) %>% 
+  group_by(year_bins, category, gender) %>% 
+  count() %>% 
+  ggplot(aes(x = year_bins, y = n, color = gender)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "",
+     subtitle = "",
+     x = "Year",
+     y = "Number of Firsts",
+     caption = "") +
+  facet_wrap(~category) +
+  NULL
+
+```
+
+## most people have "first achivement" in their 20s; the age distribution varies according to category
+
+```{r}
+
+firsts_augmented <- firsts_augmented %>% 
+  mutate(age = year - year(bday),
+         age_bins = as.numeric(as.character(
+           cut(age, 
+               breaks=c(seq(0, 100, 10)), 
+               labels=c(seq(0, 90, 10)))
+           )))
+
+
+firsts_augmented %>% 
+  filter(!is.na(age_bins),
+         !is.na(gender)) %>% 
+  group_by(age_bins, gender) %>% 
+  count() %>% 
+  ggplot(aes(x = age_bins, y = n, fill = gender))+
+  geom_col() +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  labs(title = "",
+     subtitle = "",
+     x = "Age",
+     y = "Number of Firsts",
+     caption = "") +
+  facet_wrap(~gender) +
+  NULL
+
+
+firsts_augmented %>%
+  filter(!is.na(age_bins),
+         !is.na(gender)) %>% 
+  group_by(age_bins, category, gender) %>% 
+  count() %>% 
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_col() +
+  theme_minimal() +
+  labs(title = "",
+     subtitle = "",
+     x = "Age",
+     y = "Number of Firsts",
+     caption = "") +
+  facet_wrap(~category) +
+  NULL
+
+```
+
+
+# geography
+can't use urbnmapr for mystery reasons
+
