@@ -179,12 +179,19 @@ label2 <- "New York appears to be \n the most forward thinking state \n in the U
 my_colours <- c("grey80", "dodgerblue1")
 
 states <- firsts %>% 
-  filter(!is.na(state)) %>% 
-  count(state) %>% 
-  mutate(tot  = sum(n), pct = n/sum(n)*100,
-         NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
-  filter(pct > 2) %>% 
-  arrange(desc(n))
+  filter(!is.na(state), !is.na(gender))
+
+ggplot(states, aes(x = state)) +
+  geom_bar() +
+  facet_wrap(~ gender)+
+  coord_flip()
+  # count(state) %>% 
+  # mutate(tot  = sum(n), pct = n/sum(n)*100,
+  #        NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
+  # filter(pct > 2) %>% 
+  # arrange(desc(n))
+
+ste
 
 states$pct <- paste(round(states$pct), "%", sep="")
   
@@ -202,6 +209,7 @@ ggplot(states, aes(x =  n,
                      y = reorder(state, n), fill = NY)) + # reorder bars by beer servings
   geom_col() + 
   scale_fill_manual(values = my_colours) + 
+  facet_wrap(~ gender) +
   # geom_text(
   #   aes(label = n, x = n - .25),
   #   colour = "red4",
