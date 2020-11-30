@@ -265,3 +265,87 @@ grid.arrange(plot_17,plot_18, plot_19, ncol=1)
 
 ```
 
+
+
+
+label2 <- "New York State outnumbers \n the other states"
+my_colours <- c("grey80", "dodgerblue1")
+
+states <- firsts %>% 
+  filter(!is.na(state)) %>% 
+  count(state) %>% 
+  mutate(tot  = sum(n), pct = n/sum(n)*100,
+         NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
+  filter(pct > 2) %>% 
+  arrange(desc(n))
+
+states$pct <- paste(round(states$pct), "%", sep="")
+  
+
+states <- states[-c(28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43),]
+
+ggplot(states, aes(x = n, y = reorder(state, n))) +
+  geom_col() +
+  theme_classic()
+
+ggplot(states, aes(x =  n, 
+                     y = reorder(state, n), fill = NY)) + 
+  geom_col() + 
+  scale_fill_manual(values = my_colours) + 
+  # geom_text(
+  #   aes(label = n, x = n - .25),
+  #   colour = "red4",
+  #   size = 5,
+  #   nudge_x = 400,
+  #   nudge_y = 0,
+  #   hjust = 0.45,
+  #   family="Lato") +
+  geom_text(
+    aes(label = pct),
+    colour = "green4",
+    size = 6,
+    nudge_x = 1,
+    nudge_y = 0,
+    hjust = 0.5,
+    family="Lato")+
+  geom_text(
+    data = data.frame(x = 25, y = 9.5, label = label2),
+    aes(x = x, y = y, label = label2),
+    colour="dodgerblue1",
+    family="Lato",
+    size = 6,
+    hjust = 0.5,
+    lineheight = .8,
+    inherit.aes = FALSE)+
+  # geom_text(
+  #   data = data.frame(x = 2500, y = 0.75, label = label2),
+  #   aes(x = x, y = y, label = label2),
+  #   colour="green4",
+  #   family="Lato",
+  #   size = 4.5,
+  #   hjust = 0.5,
+  #   lineheight = .8,
+  #   inherit.aes = FALSE)+
+  geom_curve(
+    data = data.frame(x = 25, y = 10, xend = 30, yend = 19.2),
+    mapping = aes(x = x, y = y, xend = xend, yend = yend),
+    colour = "grey15",
+    size = 0.5,
+    curvature = 0.25,
+    arrow = arrow(length = unit(2, "mm"), type = "closed"),
+    inherit.aes = FALSE) +
+  labs(colour = "stoppage",
+       title = "The most liberal state takes the highest number of firsts",
+       subtitle = "Over time, East Coast states have gathered more firsts",
+       caption = "",
+       x = "Number of African American Firsts",
+       y = "") +
+  theme_classic()+
+  theme(legend.position = "none",
+        plot.title = element_text(size = 23, face = "bold", colour = "dodgerblue1"),
+        plot.subtitle = element_text(size = 15),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 0, hjust = 1, size = 14),
+        axis.text.y = element_text(angle = 0, hjust = 1, size = 14))
+        
+#Due to the growth in population in the East Coast of the America being much earlier than parts fo central and western America, it can be seen from the bar chart above that the number of firsts have been significantly higher. This could be due to the migration of communities over time.
