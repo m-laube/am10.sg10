@@ -58,6 +58,8 @@ library(parsedate)
 library(opencage)
 library(gender)
 
+loadfonts(device="win")
+
 ```
 
 
@@ -781,42 +783,88 @@ Coming Soon!
 
 ```{r maps 1}
 
-
-
+# change names for gganimate to work
+firsts_jitter_sf_animate <- firsts_jitter_sf %>% 
+  rename(year = year_bins, year_full = year)
 
 # visualise population density and locations of "firsts" over time
-p2 <- ggplot() +
-  # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf, aes(fill = dens_2), color = "#04314D") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D")) +
+p <- ggplot() +
+  # draw polygons from counties shapefile,
+  # fill with population density
+  geom_sf(data = counties_pop_sf, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(breaks = levels(counties_pop_sf$dens_2),
+                    values = c("#e9eff2", 
+                               "#93b4c4", 
+                               "#57859c", 
+                               "#2d627d", 
+                               "#114966", 
+                               "#04314D"),
+                    name = "Pop. per sq. mile") +
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
   # add points from firsts shapefile
   geom_sf(
-    data = firsts_sf_jitter, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    data = firsts_jitter_sf_animate, aes(fill = gender), 
+    size = 9, 
+    shape = 21,
+    show.legend = TRUE,
+    color = "white"
   ) + 
-  scale_fill_manual(values = c("#FF6426", "#F0C400")) +
+  # fill by gender
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "Year: {previous_frame} - {current_frame}",
+       title = "Location of \"Firsts\" and Population Density over Time",
+       fill  = "Gender") + 
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Year: {previous_frame} - {current_frame}") + 
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(size = 28, 
+                            family = "Lato", 
+                            colour = "black"),
+        plot.subtitle = element_text(size = 32, 
+                            family = "Lato Black", 
+                            colour = "black"),
+        plot.title = element_text(size = 36, 
+                            family = "Lato", 
+                            colour = "black")) +
+  # animate the "firsts" and pop density over the years
   transition_manual(year) + 
   NULL
 
 
-animate(p2, fps = 2)
+# render gif and save it
+# animate(p, fps = 2, height = 800, width = 1600)
+# anim_save("firsts_over_time.gif", animation = last_animation())
 
 
+```
 
+
+![](../code/firsts_over_time.gif)  
+
+```{r maps 2}
 
 ## Before Civil War:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
-  filter(year < 1861)
+  filter(year <= 1860)
 
 counties_pop_sf_filtered <- counties_pop_sf %>% 
-  filter(year == 1830)
+  filter(year <= 1860) %>% 
+  group_by(county_fips) %>% 
+  summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  mutate(dens_2 = cut(dens_agg, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE))
 
 
 ggplot() +
@@ -828,16 +876,23 @@ ggplot() +
   # add points from firsts shapefile
   geom_sf(
     data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    show.legend = TRUE, color = "white"
   ) + 
-  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "before 1860",
+       title = "Location of \"Firsts\" and Population Density",
+       fill  = "Gender") +
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Most achievers were born in the East!",
-       fill  = "Gender") +
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
   NULL
 
 
@@ -846,7 +901,18 @@ firsts_jitter_sf_filtered <- firsts_jitter_sf %>%
   filter(year >= 1861, year < 1941)
 
 counties_pop_sf_filtered <- counties_pop_sf %>% 
-  filter(year == 1920)
+  filter(year <= 1940, year >= 1860) %>% 
+  group_by(county_fips) %>% 
+  summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  mutate(dens_2 = cut(dens_agg, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE))
 
 
 ggplot() +
@@ -858,16 +924,23 @@ ggplot() +
   # add points from firsts shapefile
   geom_sf(
     data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    show.legend = TRUE, color = "white"
   ) + 
-  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "1861 - 1941",
+       title = "Location of \"Firsts\" and Population Density",
+       fill  = "Gender") +
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Most achievers were born in the East!",
-       fill  = "Gender") +
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
   NULL
 
 
@@ -876,7 +949,18 @@ firsts_jitter_sf_filtered <- firsts_jitter_sf %>%
   filter(year >= 1941, year < 1963)
 
 counties_pop_sf_filtered <- counties_pop_sf %>% 
-  filter(year == 1960)
+  filter(year <= 1960, year >= 1940) %>% 
+  group_by(county_fips) %>% 
+  summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  mutate(dens_2 = cut(dens_agg, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE))
 
 
 ggplot() +
@@ -888,16 +972,23 @@ ggplot() +
   # add points from firsts shapefile
   geom_sf(
     data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    show.legend = TRUE, color = "white"
   ) + 
-  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "1941 - 1963",
+       title = "Location of \"Firsts\" and Population Density",
+       fill  = "Gender") +
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Most achievers were born in the East!",
-       fill  = "Gender") +
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
   NULL
 
 
@@ -906,7 +997,18 @@ firsts_jitter_sf_filtered <- firsts_jitter_sf %>%
   filter(year >= 1963, year < 2008)
 
 counties_pop_sf_filtered <- counties_pop_sf %>% 
-  filter(year == 1990)
+  filter(year <= 2010, year >= 1960) %>% 
+  group_by(county_fips) %>% 
+  summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  mutate(dens_2 = cut(dens_agg, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE))
 
 
 ggplot() +
@@ -918,16 +1020,23 @@ ggplot() +
   # add points from firsts shapefile
   geom_sf(
     data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    show.legend = TRUE, color = "white"
   ) + 
-  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "1963 - 2008",
+       title = "Location of \"Firsts\" and Population Density",
+       fill  = "Gender") +
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Most achievers were born in the East!",
-       fill  = "Gender") +
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
   NULL
 
 
@@ -936,7 +1045,18 @@ firsts_jitter_sf_filtered <- firsts_jitter_sf %>%
   filter(year >= 2008)
 
 counties_pop_sf_filtered <- counties_pop_sf %>% 
-  filter(year == 2010)
+  filter(year <= 2020, year >= 2000) %>% 
+  group_by(county_fips) %>% 
+  summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  mutate(dens_2 = cut(dens_agg, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE))
 
 
 ggplot() +
@@ -948,20 +1068,79 @@ ggplot() +
   # add points from firsts shapefile
   geom_sf(
     data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE
+    show.legend = TRUE, color = "white"
   ) + 
-  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  # add titles
+  labs(subtitle = "2008 - today",
+       title = "Location of \"Firsts\" and Population Density",
+       fill  = "Gender") +
+  # customize theme
   theme_minimal()+
   coord_sf(datum = NA) + #remove coordinates
-  labs(title = "Most achievers were born in the East!",
-       fill  = "Gender") +
-  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
-  theme(axis.text = element_blank()) +
-  # theme(strip.text = element_text(color = "white"))+
+  theme(axis.text = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
   NULL
 
 
 ```
 
-cultural center --> new york, boston, LA, ..
+cultural center --> New York, Boston, LA, ..
+
+## gender category
+
+```{r, fig.width = 12}
+
+gender_category_df<- firsts %>% 
+  filter(!is.na(gender)) %>% 
+  filter(!is.na(category)) %>% 
+  mutate(category = if_else(category == "Education & Science", "Edu & Science", 
+                    if_else(category == "Arts & Entertainment", "Arts & Entertainment", category))) %>% 
+  group_by(gender) %>% 
+  mutate(number_firsts= n()) %>% 
+  ungroup() %>% 
+  group_by(gender, category) %>% 
+  mutate(number_category_firsts= n(),
+         pct_category_firsts=number_category_firsts/ number_firsts) %>% 
+  select(gender,category,pct_category_firsts) %>% 
+  distinct() %>% 
+  arrange(desc(pct_category_firsts)) %>% 
+  mutate(category = fct_inorder(category))
+
+
+gender_category_df %>% 
+  ggplot(aes(y = pct_category_firsts, x = 
+               reorder(category,desc(pct_category_firsts)),fill=gender)) +
+  geom_col(width = 0.7, position='dodge')+
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  geom_text(
+    aes(label = ifelse(gender=="male",paste(round(pct_category_firsts*100,1)),"")), 
+    color = "white", 
+    size = 2.5,
+    vjust = 3,
+    hjust=-0.1
+  ) +
+  geom_text(
+    aes(label = ifelse(gender=="female",paste(round(pct_category_firsts*100,1)),"")), 
+    color = "white", 
+    size = 2.5,
+    vjust = 3,
+    hjust=1.1
+  ) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent)+
+ # scale_x_reordered()+
+  labs(title = "Firsts by Gender and Category",
+       x     =  "",
+       y     = "")+
+  theme(#axis.text.x = element_text(angle = 90),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank())
+
+```
 
