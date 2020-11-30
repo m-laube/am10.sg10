@@ -589,12 +589,16 @@ For our analysis, we need a binned `year` variable and a variable `age`, that me
 ```{r transform firsts}
 
 # cut year into buckets 
-# needed for gganimate
+# needed for gganimate and the timeline
 firsts <- firsts %>% 
   mutate(year_bins = cut(year, 
                         breaks = c(min(year)-1, c(seq(1790, 2020, 10))), 
                         labels = c(seq(1790, 2020, 10)))) %>% 
-  mutate(year_bins = as.integer(levels(year_bins))[year_bins])
+  mutate(year_bins = as.integer(levels(year_bins))[year_bins]) %>% 
+  mutate(year_bins_2 = cut(year, 
+                        breaks = c(min(year)-1, c(seq(1760, 2020, 5))), 
+                        labels = c(seq(1760, 2020, 5)))) %>% 
+  mutate(year_bins_2 = as.integer(levels(year_bins_2))[year_bins_2])
 
 
 # calculate age when person achieved the "first"
@@ -777,7 +781,29 @@ Let's say goodbye to this technically demanding part of our work:
 
 # The Story
 
-Coming Soon!
+## "Firsts" over Time and American History
+
+```{r history}
+
+firsts %>% 
+  count(year_bins_2) %>% 
+  ggplot(aes(x = year_bins_2, y = n)) +
+  geom_line(size = 1, color = "#04314D") + 
+  geom_vline(xintercept = 1861, # civil war
+             color = "#D6AF00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  labs(title = "Number of \"Firsts\" over Time",
+       subtitle = "Civl War") +
+  NULL
+
+```
+
+
 
 ## Geographical Aspect
 
@@ -846,12 +872,13 @@ p <- ggplot() +
 
 ![](../code/firsts_over_time.gif)  
 
-```{r maps 2}
+```{r maps 2, cache = TRUE}
 
 ## Before Civil War:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year <= 1860)
 
+# average population density before civil war
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 1860) %>% 
   group_by(county_fips) %>% 
@@ -1090,11 +1117,75 @@ ggplot() +
 
 ```
 
+going west
 cultural center --> New York, Boston, LA, ..
 
-## gender category
+## Gender Gap over Time
 
-```{r, fig.width = 12}
+```{r gender gap}
+
+sex_count <- firsts %>%
+  filter(!is.na(gender),
+         !is.na(year_bins)) %>% 
+  group_by(year_bins, gender) %>% 
+  count() %>% 
+  arrange(year_bins)
+
+# add missing year 1820
+sex_count_1820 <- sex_count %>% 
+  filter(year_bins == 1800) %>% 
+  mutate(year_bins = as.integer(1820),
+         n = as.integer(0))
+
+sex_count <- bind_rows(sex_count, sex_count_1820)
+
+rm(sex_count_1820)
+
+sex_count_wider <- sex_count %>% 
+  pivot_wider(names_from = gender, values_from = n) %>% 
+  mutate(female = if_else(is.na(female), as.integer(0), female))
+
+sex_count <- sex_count_wider %>% 
+  pivot_longer(female:male, names_to = "gender", values_to = "n")
+
+
+sex_count_wider <- sex_count_wider %>% 
+  mutate(middle = ifelse(female > male,male,female))
+
+
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins)) +
+  geom_line(data = sex_count, 
+            aes(x = year_bins, y = n, color = gender),
+            size = 1) +
+  scale_color_manual(values = c("#D6AF00", "#4D0B0C"), name = "Gender") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  labs(title = "Gender Gap persists over Time",
+       subtitle = "Number of \"Firsts\" by Gender",
+       x = "Year",
+       y = "Number of Firsts",
+       caption = "") +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  NULL
+
+```
+Although African-Americans have growing achievements over the years, the gender
+gaps have also been broaden. In the two spikes of 1860s and 1940s, male number
+grew much more than female, and the difference between sex stays in following 
+years, which can be clearly demonstrated from the shades in the graph.
+However, entering 21th century, the gender equality has improved a lot.
+
+
+## Analysing Gender and Category
+
+```{r gender cat, fig.width = 12}
 
 gender_category_df<- firsts %>% 
   filter(!is.na(gender)) %>% 
@@ -1119,28 +1210,55 @@ gender_category_df %>%
   geom_col(width = 0.7, position='dodge')+
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
   geom_text(
-    aes(label = ifelse(gender=="male",paste(round(pct_category_firsts*100,1)),"")), 
+    aes(label = ifelse(gender=="male" & pct_category_firsts < 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
     color = "white", 
-    size = 2.5,
-    vjust = 3,
-    hjust=-0.1
+    size = 4.5,
+    vjust = 1.5,
+    hjust= -0.45
   ) +
   geom_text(
-    aes(label = ifelse(gender=="female",paste(round(pct_category_firsts*100,1)),"")), 
+    aes(label = ifelse(gender=="male" & pct_category_firsts >= 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
     color = "white", 
-    size = 2.5,
-    vjust = 3,
-    hjust=1.1
+    size = 4.5,
+    vjust = 1.5,
+    hjust= -0.15
+  ) +
+  geom_text(
+    aes(label = ifelse(gender=="female" & pct_category_firsts < 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    color = "white", 
+    size = 4.5,
+    vjust = 1.5,
+    hjust=1.35
+  ) +
+  geom_text(
+    aes(label = ifelse(gender=="female" & pct_category_firsts >= 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    color = "white", 
+    size = 4.5,
+    vjust = 1.5,
+    hjust=1.12
   ) +
   theme_minimal() +
   scale_y_continuous(labels = scales::percent)+
  # scale_x_reordered()+
   labs(title = "Firsts by Gender and Category",
-       x     =  "",
-       y     = "")+
+       x     = "",
+       y     = "",
+       fill  = "Gender")+
   theme(#axis.text.x = element_text(angle = 90),
         panel.grid = element_blank(),
-        axis.text.y = element_blank())
+        axis.text.y = element_blank(),
+        text = element_text(family = "Lato", 
+                            colour = "black",
+                            size   = 13),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black",
+                                  size = 18),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  NULL
 
 ```
+
+Looking at the Firsts over Categories for African American Men and Women, we see that there are certain trends: Women's firsts are most prelevant in the Arts and Entertainment sectors, however they are also present in the Education and Sciences. For Men, the Sciences and Military Sector are pretty strong, as well as Politics. 
+This confirms the alleged gender bias and overrepresentation of males in technical and political spheres wheras women are traditionally pushed into the Arts and Social sectors. 
 

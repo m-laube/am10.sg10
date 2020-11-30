@@ -668,3 +668,202 @@ ts(firsts_test$n, deltat = 1/2) %>%
 stl(firsts_test_ts_2)
 
 # confidence intervals for male / female per category
+
+
+
+###############################################################################
+# Gender Gap over Time
+###############################################################################
+
+sex_count <- firsts %>%
+  filter(!is.na(gender),
+         !is.na(year_bins)) %>% 
+  group_by(year_bins, gender) %>% 
+  count() %>% 
+  arrange(year_bins)
+
+# add missing year 1820
+sex_count_1820 <- sex_count %>% 
+  filter(year_bins == 1800) %>% 
+  mutate(year_bins = as.integer(1820),
+         n = as.integer(0))
+
+sex_count <- bind_rows(sex_count, sex_count_1820)
+
+rm(sex_count_1820)
+
+sex_count_wider <- sex_count %>% 
+  pivot_wider(names_from = gender, values_from = n) %>% 
+  mutate(female = if_else(is.na(female), as.integer(0), female))
+
+sex_count <- sex_count_wider %>% 
+  pivot_longer(female:male, names_to = "gender", values_to = "n")
+
+
+sex_count_wider <- sex_count_wider %>% 
+  mutate(middle = ifelse(female > male,male,female)) %>% 
+  mutate(ribbon_helper = if_else(year_bins > 1790, if_else(female > male, male, female), NA_integer_),
+         male_helper = if_else(year_bins > 1790, male, NA_integer_),
+         female_helper = if_else(year_bins > 1790, female, NA_integer_),
+         min = if_else(male > female, female, male),
+         min_helper = as.integer(0),
+         min = if_else(year_bins > 1790, min, NA_integer_),
+         min_helper = if_else(year_bins > 1790, min_helper, NA_integer_))
+
+
+firsts %>% 
+  ggplot(aes(x = year)) +
+  geom_histogram(boundary = 1861, binwidth = 5, color = "white", fill = "#000461") +
+  geom_vline(xintercept = 1861, # civil war
+             color = "#AD8C00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins)) +
+  
+  geom_step(data = sex_count, aes(x = year_bins, y = n, color = gender), size = 1, direction = "mid") +
+  
+  scale_color_manual(values = c("#D6AF00", "#4D0B0C"), name = "Gender") +
+  
+  geom_stepribbon(aes(ymin = ribbon_helper, ymax = male_helper, group = 1), 
+                  fill = "red3", 
+                  alpha = 0.1, 
+                  position = position_nudge(x = -5)) +
+  
+  geom_stepribbon(aes(ymin = female_helper, ymax = ribbon_helper, group = 1), 
+                  fill = "green4", 
+                  alpha = 0.1, 
+                  position = position_nudge(x = -5)) +
+  
+  geom_stepribbon(aes(ymin = min_helper, ymax = min, group = 1), 
+                  fill = "gray20", 
+                  alpha = 0.1, 
+                  position = position_nudge(x = -5)) +
+  
+  geom_tile(aes(x = 2017.5, width = 4.5, y = 20.5, height = 6.5), alpha = 0.0058, fill = "red3") +
+  
+  geom_tile(aes(x = 1792.5, width = 4.5, y = 4, height = 2), alpha = 0.0058, fill = "red3") +
+  
+  geom_tile(aes(x = 2017.5, width = 5, y = 8.35, height = 16.9), fill = "gray92") +
+  
+  geom_tile(aes(x = 1792.5, width = 4.85, y = 1.35, height = 2.9), fill = "gray92") +
+  
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  labs(title = "Gender Gap persists over Time",
+       subtitle = "Number of \"Firsts\" by Gender",
+       x = "Year",
+       y = "Number of Firsts",
+       caption = "") +
+  NULL
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins)) +
+  geom_line(aes(y = female), group = 1, size = 1, color = "pink") +
+  geom_line(aes(y = male), group = 1, size = 1, color = "skyblue") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  theme_minimal() +
+  labs(title = "Gender gaps have grown over the years",
+       subtitle = "First achievements by gender",
+       x = "Year",
+       y = "Number of Firsts",
+       caption = "") +
+  NULL
+
+
+################################################################################
+
+sex_count <- firsts %>%
+  filter(!is.na(gender),
+         !is.na(year_bins_2)) %>% 
+  group_by(year_bins_2, gender) %>% 
+  count() %>% 
+  ungroup()
+
+# add missing years
+sex_count_missing <- tribble(
+  ~year_bins_2, ~gender, ~n,
+  1765, "male", as.integer(0),
+  1780, "male", as.integer(0), 
+  1790, "male", as.integer(0), 
+  1800, "male", as.integer(0), 
+  1810, "male", as.integer(0), 
+  1815, "male", as.integer(0), 
+  1820, "male", as.integer(0), 
+  1830, "male", as.integer(0), 
+  1835, "male", as.integer(0)
+)
+
+sex_count <- bind_rows(sex_count, sex_count_missing) %>% 
+  arrange(year_bins_2)
+
+rm(sex_count_1820)
+
+sex_count_wider <- sex_count %>% 
+  pivot_wider(names_from = gender, values_from = n)
+
+sex_count_wider <- sex_count_wider %>% 
+  mutate(female = if_else(is.na(female), as.integer(0), female)) %>% 
+  mutate(middle = if_else(female > male, male, female))
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins_2)) +
+  geom_line(aes(y = female), group = 1, size = 1, color = "pink") +
+  geom_line(aes(y = male), group = 1, size = 1, color = "skyblue") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  labs(title = "Gender gaps have grown over the years",
+       subtitle = "First achievements by gender",
+       x = "Year",
+       y = "Number of Firsts",
+       caption = "") +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
+
+
+firsts %>% 
+  count(year_bins_2) %>% 
+  ggplot(aes(x = year_bins_2, y = n)) +
+  geom_line(size = 1, color = "#04314D") + 
+  geom_vline(xintercept = 1861, # civil war
+             color = "#D6AF00", size=1) +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  labs(title = "Number of \"Firsts\" over Time",
+       subtitle = "Civil War") +
+  NULL
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins_2)) +
+  geom_line(aes(y = female), group = 1, size = 1, color = "#D6AF00") +
+  geom_line(aes(y = male), group = 1, size = 1, color = "#4D0B0C") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  labs(title = "Gender Gap persists over Time",
+       subtitle = "Number of \"Firsts\" by Gender",
+       x = "Year",
+       y = "Number of Firsts",
+       caption = "") +
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()) +
+  NULL
