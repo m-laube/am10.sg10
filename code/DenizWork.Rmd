@@ -152,3 +152,6 @@ gender_category_df %>%
 
 ```
 
+Looking at the Firsts over Categories for African American Men and Women, we see that there are certain trends: Women's firsts are most prelevant in the Arts and Entertainment sectors, however they are also present in the Education and Sciences. For Men, the Sciences and Military Sector are pretty strong, as well as Politics. 
+This confirms the alleged gender bias and overrepresentation of males in technical and political spheres wheras women are traditionally pushed into the Arts and Social sectors. 
+
