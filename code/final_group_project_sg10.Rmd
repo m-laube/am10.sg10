@@ -541,7 +541,7 @@ Let us save this part of our work as a csv:
 
 ```{r save data, eval = FALSE}
 
-write_csv(first_df, path = "../data/firsts_augmented.csv")
+write_csv(first_df, path = here("../data/firsts_augmented.csv"))
 
 ```
 
@@ -552,21 +552,416 @@ In the next section, we can now calculate variables like `age` and load shapefil
 
 ### Load and Transform "Firsts"
 
+Let us load our scraped and curated data and have a look at it:
+
+```{r load glimpse}
+
+# load "firsts" data and clean column names
+firsts <- read_csv(here("../data/firsts_augmented.csv"), 
+                   col_types = cols(year = col_integer(), 
+                                    id_num = col_integer())) %>% 
+  clean_names()
+
+# glimpse at data
+glimpse(firsts)
+
+```
+
+As we took care of cleaning the data while scraping, there is no much work left to do. We can see that we have quite some NAs. This is because we were not always able to scrape a `bday` or geocode a `location`. However, this shouldn't be a big issue for our analysis and unfortunately there is nothing we can do about it. 
+
+We do not need the columns `id_num`, `data_string_raw`, `data_string_cle`, and `wiki` anymore. Hence, we can drop them:
+
+```{r drop columns}
+
+firsts <- firsts %>% 
+  select(-data_string_raw, 
+         -data_string_cle,
+         -wiki, 
+         -id_num)
+
+```
 
 
+For our analysis, we need a binned `year` variable and a variable `age`, that measures how old a person was when achieving the "first". We create them in the following:
+
+```{r transform firsts}
+
+# cut year into buckets 
+# needed for gganimate
+firsts <- firsts %>% 
+  mutate(year_bins = cut(year, 
+                        breaks = c(min(year)-1, c(seq(1790, 2020, 10))), 
+                        labels = c(seq(1790, 2020, 10)))) %>% 
+  mutate(year_bins = as.integer(levels(year_bins))[year_bins])
 
 
-### Load and Transform Shapefiles
+# calculate age when person achieved the "first"
+# also cut age into buckets
+firsts <- firsts %>% 
+  mutate(age = year - year(bday)) %>% 
+  mutate(age_bins = cut(age, 
+                        breaks = c(seq(0, 100, 10)), 
+                        labels = c(seq(0, 90, 10)),
+                        right  = FALSE)) %>% 
+  mutate(age_bins = as.integer(levels(age_bins))[age_bins])
 
 
-## Final Data Dictionary
+```
 
-### `firsts.csv`
+Great, that should be it! We conclude this section by describing the resulting tibble:
+
+#### Data Dictionary
 
 |variable |class     |description |
 |:--------|:---------|:-----------|
 |year     |integer   | Year of the achievement |
-| accomplishment     |character | accomplishment - the actual achievement or attainment |
-|person   |character | The person or persons who accomplished the specific accomplishment |
-|gender   |character | Gender - indicates either female AND African-American, or a more general African-American first |
-|category |character | A few meta-categories of different accomplishments |
+|accomplishment     |character | Description of the actual achievement or attainment |
+|name   |character | The person who accomplished the specific accomplishment |
+|category   |character | A few meta-categories of different accomplishments |
+|bday |date | Birthday of the achiever |
+|gender |character | Gender of the achiever |
+|location |character | Location of birth of the achiever |
+|lat |double | Location of birth of the achiever: Longitude |
+|lng |double | Location of birth of the achiever: Latitude |
+|country |character | Location of birth of the achiever: Country |
+|state |character | Location of birth of the achiever: State |
+|county |character | Location of birth of the achiever: County |
+|city |character | Location of birth of the achiever: City |
+|fips_state |character | Location of birth of the achiever: FIPS of State |
+|year_bins |integer | Binned year of the achievement |
+|age |double | Age of person when the "first" was achieved |
+|age_bins |integer | Binned age |
+
+
+### Load and Transform Shapefiles
+
+To be able to plot our data on a map, we need the shapefiles of the US and we have to convert the firsts to a compatible format. For this, we leverage the `sf` package and the `urbnmapr` package:
+
+```{r shapefiles}
+
+# load states shapefile
+states_sf <- get_urbn_map("states", sf = TRUE)
+
+# transfrom geometry to 4326, or pairs of latitude/longitude numbers
+states_sf <-  states_sf %>% 
+  st_transform(4326) # transfrom to WGS84, latitude/longitude
+
+
+# load counties shapefile
+counties_sf <- get_urbn_map("counties", sf = TRUE)
+
+# transfrom geometry to 4326, or pairs of latitude/longitude numbers
+counties_sf <-  counties_sf %>% 
+  st_transform(4326) # transfrom to WGS84, latitude/longitude
+
+
+# convert firsts to a sf object with jitter on coordinates
+set.seed(100)
+firsts_jitter_sf <- firsts %>% 
+  
+  # drop rows with missing values
+  drop_na(lng, lat, gender) %>%
+  
+  # jitter points such that they are better visible
+  mutate(lng = jitter(lng, amount = 1),
+         lat = jitter(lat, amount = 1)) %>% 
+  
+  # filter for valid locations in the US
+  filter(country == "United States of America") %>% 
+  filter(lng > -140) %>% 
+  
+  # convert to sf object
+  st_as_sf(coords = c('lng', 'lat'), 
+           crs = st_crs(states_sf))
+
+
+```
+
+Note that we have jittered the coordinates of the birth locations, as there are for example a lot of locations pointing to New York City. Using jitter makes the maps we will produce much more insightful, as points are not overlapping that much anymore.  
+
+What is also important for our analysis are actual population numbers. Because at first sight, the geospatial distribution of firsts might seem odd. However, taking actual population data into account might give a much clearer picture. Hence, we load [population data](https://conservancy.umn.edu/handle/11299/181605) from 1790-2010:
+
+
+```{r population}
+
+# load absolute population data from 1790-2010 and clean names
+# source: https://conservancy.umn.edu/handle/11299/181605
+population_abs <- read_xlsx(here("../data/county2010_hist_pops.xlsx"), sheet = "c2010_hist_pops") %>% 
+  clean_names()
+
+# bring data into long format and clean the year
+population_abs <- population_abs %>% 
+  
+  # bring to long format
+  pivot_longer(cols = epop1790:pop2010, names_to = "year", values_to = "pop") %>% 
+  
+  # extract / clean year
+  mutate(year = str_sub(year, -4, -1)) %>% 
+  
+  # only take relevant columns
+  select(geoid10, year, pop)
+
+
+# load population density data from 1790-2010 and clean names
+# source: https://conservancy.umn.edu/handle/11299/181605
+population_dens <- read_xlsx(here("../data/county2010_hist_pops.xlsx"), sheet = "densities") %>% 
+  clean_names()
+
+# bring data into long format and clean the year
+population_dens <- population_dens %>% 
+  
+  # bring to long format
+  pivot_longer(cols = dens1790:dens2010, names_to = "year", values_to = "dens") %>% 
+  
+  # extract / clean year
+  mutate(year = str_sub(year, -4, -1))
+
+
+# join population densities and absolute numbers in one table
+population <- population_dens %>% 
+  left_join(population_abs) %>% 
+  
+  # cut density into buckets (otherwise we have some with values of over 2000, 
+  # and others with values < 2 --> not good for visualisation / colouring)
+  mutate(dens_2 = cut(dens, 
+                      breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens)),
+                      labels = c("[0, 2]", 
+                                 "(2, 6]", 
+                                 "(6, 18]", 
+                                 "(18, 45]", 
+                                 "(45, 90]", 
+                                 "90+"),
+                      ordered_result = TRUE)) %>% 
+  
+  # convert year to integer
+  mutate(year = as.integer(year))
+
+
+# we only have population data until 2010. However, we also have "firsts" in the period of 2010-2020.
+# to be able to animate this properly with gganimate, we will duplicate the 2010 values and set them
+# as values for 2020. We will end up with population data for 1790 until 2020.
+# To say it clear: we assume that there are no changes in population from 2010 to 2020.
+
+pop_2020 <- population %>% 
+  filter(year == 2010) %>% 
+  mutate(year = 2020)
+
+population <- bind_rows(population, pop_2020) %>% 
+  arrange(geoid10, year)
+
+
+# join counties_sf and population data
+counties_pop_sf <- counties_sf %>% 
+  left_join(population, by = c("county_fips" = "geoid10"))
+
+
+# clean up
+rm(population, population_abs, population_dens, pop_2020)
+
+```
+
+
+We end up having a ready-to-plot shapefile of "firsts", a shapefile to plot US states and a shapefile to plot US counties.
+Additionally, we have a big shapefile `counties_pop_sf`, that holds information about the population in each US county
+since 1790!
+
+Unbelievable, this was the last part of the data scraping and wrangling part! We are ready to go on now to visualise the data and tell our story!
+
+Let's say goodbye to this technically demanding part of our work:
+
+![](../misc/goodbye.gif)  
+[source](https://giphy.com/gifs/venommovie-sony-venom-movie-Dr1i3afFIL68D9adzp)
+
+
+# The Story
+
+Coming Soon!
+
+## Geographical Aspect
+
+```{r maps 1}
+
+
+
+
+# visualise population density and locations of "firsts" over time
+p2 <- ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf, aes(fill = dens_2), color = "#04314D") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D")) +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_sf_jitter, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#FF6426", "#F0C400")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Year: {previous_frame} - {current_frame}") + 
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  transition_manual(year) + 
+  NULL
+
+
+animate(p2, fps = 2)
+
+
+
+
+## Before Civil War:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year < 1861)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1830)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before WWII:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1861, year < 1941)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1920)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before 1963:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1941, year < 1963)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1960)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before 2008:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1963, year < 2008)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1990)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## After 2008:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 2008)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 2010)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+```
+
+cultural center --> new york, boston, LA, ..
+
