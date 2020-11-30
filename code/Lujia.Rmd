@@ -44,9 +44,6 @@ glimpse(firsts_augmented)
 
 ```{r}
 
-# todo: make it interactive
-# todo: key dates in history (cuz there are a clear cut point)
-
 firsts_augmented <- firsts_augmented %>% 
   mutate(year_bins = as.numeric(as.character(
            cut(year, 
@@ -54,10 +51,14 @@ firsts_augmented <- firsts_augmented %>%
                labels=c(seq(1790, 2020, 10))))
            ))
 
-firsts_augmented %>%
-  filter(!is.na(gender)) %>% 
+sex_count <- firsts_augmented %>%
+  filter(!is.na(gender),
+         !is.na(year_bins)) %>% 
   group_by(year_bins, gender) %>% 
   count() %>% 
+  arrange(year_bins)
+
+sex_count %>% 
   ggplot(aes(x = year_bins, y = n, color = gender)) +
   geom_line() +
   theme_minimal() +
@@ -68,7 +69,29 @@ firsts_augmented %>%
      caption = "") +
   NULL
 
+sex_count_wider <- sex_count %>% 
+  pivot_wider(names_from = gender, values_from = n) %>% 
+  mutate(middle = ifelse(female>male,male,female))
+
+sex_count_wider %>% 
+  ggplot(aes(x = year_bins)) +
+  geom_line(aes(y = female), group = 1, size = 1, color = "pink") +
+  geom_line(aes(y = male), group = 1, size = 1, color = "skyblue") +
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
+  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  theme_minimal() +
+  labs(title = "",
+     subtitle = "",
+     x = "Year",
+     y = "Number of Firsts",
+     caption = "") +
+  NULL
+
+
 ```
+
+
+
 ## some category changed more; the areas where female are less than male are - education&science, military, and sports
 
 ```{r}
