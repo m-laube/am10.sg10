@@ -777,4 +777,191 @@ Let's say goodbye to this technically demanding part of our work:
 
 Coming Soon!
 
+## Geographical Aspect
+
+```{r maps 1}
+
+
+
+
+# visualise population density and locations of "firsts" over time
+p2 <- ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf, aes(fill = dens_2), color = "#04314D") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D")) +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_sf_jitter, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#FF6426", "#F0C400")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Year: {previous_frame} - {current_frame}") + 
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  transition_manual(year) + 
+  NULL
+
+
+animate(p2, fps = 2)
+
+
+
+
+## Before Civil War:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year < 1861)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1830)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before WWII:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1861, year < 1941)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1920)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before 1963:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1941, year < 1963)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1960)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## Before 2008:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 1963, year < 2008)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 1990)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+## After 2008:
+firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
+  filter(year >= 2008)
+
+counties_pop_sf_filtered <- counties_pop_sf %>% 
+  filter(year == 2010)
+
+
+ggplot() +
+  # draw polygons from counties shapefile
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+                    name = "Pop. per sq. mile") +
+  new_scale_fill() + 
+  # add points from firsts shapefile
+  geom_sf(
+    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
+    show.legend = TRUE
+  ) + 
+  scale_fill_manual(values = c("#D615B8", "#D6AF00")) +
+  theme_minimal()+
+  coord_sf(datum = NA) + #remove coordinates
+  labs(title = "Most achievers were born in the East!",
+       fill  = "Gender") +
+  # hrbrthemes::theme_ft_rc(grid="", strip_text_face = "bold") +
+  theme(axis.text = element_blank()) +
+  # theme(strip.text = element_text(color = "white"))+
+  NULL
+
+
+```
+
+cultural center --> new york, boston, LA, ..
 
