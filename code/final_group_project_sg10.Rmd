@@ -133,7 +133,6 @@ get_first <- function(id_num){
     html_nodes(glue::glue("#mw-content-text > div > ul:nth-child({id_num}) > li")) %>% 
     # store multiple "first" per year in a list
     lapply(function(x) x)
-  
 }
 
 
@@ -277,8 +276,7 @@ extract_bday_location <- function(wiki){
   if(!is.na(bd)){
     bd <- toString(bd)
   }
-  
-  
+
   # extract birth location by parsing the raw HTML
   
   # parse raw HTML to find birth location
@@ -379,7 +377,6 @@ clean_first_augmented <- suppressMessages(clean_first_augmented %>%
 
 # clean up
 rm(opencage_custom)
-
 ```
 
 
@@ -803,6 +800,50 @@ firsts %>%
 
 ```
 
+### Civil War
+
+Moving along the timeline, the first spike we see occurs around the 1860s. Any of us that take interest in the US history would know that these are the years of the Civil War, taking from 1861 to 1865. This period has a central focus in the long standing controversy of black people's enslavement and naturally stands out as a moment of deep change for the Afican American community in the US.
+
+In more detail, even if central in the dispute between secessionists and unionists, the banning of slavery was not the initial reason of the dispute. The southern states saw fit to split from the Union and saw slavery as a focal point of divergence.At the very beginning of the war, Lincoln's Union Army COULDN'T recruit black men because of a previous law. Out of necessity and with great uncertainty about the reactions of more recist states, the Union leader later passed a preliminary emancipation proclamation stating that "slaves within any State, or designated part of a State…in rebellion,…shall be then, thenceforward, and forever free".
+
+This was a very strategic move as it it brought roughly 179,000 black men to serve as soldiers in the Army and fight for the Union. Moreover, it deprived the Confederacy of a great bulk of its labour force, unsettling the socio-economic dynamics of the secessionists.
+
+As slavery was considered illegal after the end of the Civil War, African Americans enjoyed a period when they were allowed to vote, actively participate in the political process, acquire the land of former owners, seek their own employment, and use public accommodations. With this, a great deal of firsts arised and are clearly shown in our graph.
+
+### The Aftermath and WWII
+
+The second large increase is close to the beginning of the second half of the 20th century. It takes very little historical knowledge to link this date to the Second World War, but let's see in more detail how did this horrible period shape positively the African American Opportunities in society.
+
+On broad terms, we could say that the need for men in the military drove integration. In 1941 fewer than 4,000 African Americans were serving in the military and, by contrast, in 1945 1,2 million individuals of colour were wearing the military uniform. EVen if they were fighting in a segregates style, the sense of unity and camaraderie sparked a process of inclusion that later developed in the society after WWII.
+
+Looking th the firsts during the War, we could list (1939-45):
+- The first Graduate of the U.S. Naval Academy
+- First African-American flag officer
+- First African-American to be awarded the Navy Cross
+- First African-American member of the U.S. Marine Corps
+- First African-American U.S. Marine Corps officer
+
+These are all very intertwined with the inclusion of African Americans in the military environment. Nevertheless, the forced connection from fighting in the same ranks and the marketing campaigns from the government to motivate people of color to join the army were normalizing the inclusion of black people back in the US.
+
+On that note, the following list adresses non military firsts that occurred during the war in non military related fields:
+- First African American to star in her own television program
+- First African American to be portrayed on a U.S. postage stamp
+- First African American to win an Oscar
+- First African-American artists to have a #1 hit on the Billboard charts
+- First African-American woman to earn a Ph.D. in mathematics
+
+To finalize this chapter of African American History, it is important to mention the Second Great Migration. This was a demographic shift of a great nu
+mber of black individuals towards the nothern states. People of colour were convinced to move/change life due to the finacially appealing offers from defence related factories in the North that were experiencing shortages. As a great amount of African Americans moved to more liberal states they enjoyed more freedom (exemplified by the right to vote), and hence initiateda an healing/improvement process that would see the Black community empowered by opportunity.
+
+It is for the events above and for the outcome of WWII that "The Pittsburgh courier" stated this war peirod as a "Double Victory", over the nazis in Europe and over racists at home.
+
+#### I have a Dream Speech / Civil Rights Movement
+
+Even if significant in the breakthough of African Americans in Society, the above events couldn't be enough to find equality between people of colour and white Americans. Specifically, after the 1860s very few relevant laws were passed with the intention of protecting black people's rights. It is for this reason that, between 1955 and 1968, non violent large mass protests took place with the intention of disrupting the normal funcioning of urban centers and forcing a positive dialogue.
+
+It is needless to say that these protests received some part of resistance from conservative racists, especially in the southen part of the country. Without going in too much of detail about this extremely eventful period in American History, the decade could be described as something that sets a before and an after. Specifically, people of colour were fighting for the end of segregation in education, healthcare, public transportation, legal representation and, more broadly speaking, political representation. They found the latter in Malcom X and Martin Luther King, being the loud voices that couldn't be ignored.
+
+Pairing this to the liberal views in Washington, represented by John F Kennedy, the outcome was painful but surely positive. As a result of this rough period, the Historic Civil RIghts Act was passed in 1964, officially outlawing discrimination based on sex, race, color, national origin or gender identity. With this breakthough legislation, all future firsts have been greatly facilitated, as we can see from the spike in the late 1900s.
 
 
 ## Geographical Aspect
