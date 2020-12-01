@@ -781,31 +781,375 @@ Let's say goodbye to this technically demanding part of our work:
 
 # The Story
 
-## "Firsts" over Time and American History
+## "Firsts" over Time and a Stroll through American History
 
 ```{r history}
 
 firsts %>% 
+  # count number of "firsts" in each bin
   count(year_bins_2) %>% 
+  
+  # initiate ggplot
   ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
   geom_line(size = 1, color = "#04314D") + 
-  geom_vline(xintercept = 1861, # civil war
-             color = "#D6AF00", size=1) +
+  
+  # customize theme
   theme_minimal() + 
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.title.position = "plot") +
-  labs(title = "Number of \"Firsts\" over Time",
-       subtitle = "Civl War") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add vertical golden line for Civil War
+  annotate("segment", 
+           x = 1861 , 
+           y = -Inf, 
+           xend = 1861, 
+           yend = 18, 
+           color = "#D6AF00", 
+           size = 1) +
+  # add text for Civil War
+  geom_text(data = data.frame(x = 1845, y = 16.5, label = "Civil War"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+  ) +
+  
+  # add labels
+  labs(title = "A Stroll through American History",
+       subtitle = "Number of \"Firsts\" over Time") +
   NULL
 
 ```
 
+```{r}
+
+firsts %>% 
+  # count number of "firsts" in each bin
+  count(year_bins_2) %>%
+  
+  # initiate ggplot
+  ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
+  geom_line(size = 1, color = "#04314D") + 
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add vertical golden line for Civil War
+  annotate("segment", 
+           x = 1861 , 
+           y = -Inf, 
+           xend = 1861, 
+           yend = 18, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for Civil War
+  geom_text(data = data.frame(x = 1845, y = 16.5, label = "Civil War"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add vertical golden line for WWII
+  annotate("segment", 
+           x = 1941 , 
+           y = -Inf, 
+           xend = 1941, 
+           yend = 28, 
+           color = "#D6AF00", 
+           size = 1) +
+  # add text for WWII
+  geom_text(data = data.frame(x = 1920, y = 26.5, label = "World War II"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE
+  ) +
+  
+  # add labels
+  labs(title = "A Stroll through American History",
+       subtitle = "Number of \"Firsts\" over Time") +
+  NULL
 
 
-## Geographical Aspect
+```
+
+```{r}
+
+firsts %>% 
+  # count number of "firsts" in each bin
+  count(year_bins_2) %>%
+  
+  # initiate ggplot
+  ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
+  geom_line(size = 1, color = "#04314D") + 
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add vertical golden line for Civil War
+  annotate("segment", 
+           x = 1861 , 
+           y = -Inf, 
+           xend = 1861, 
+           yend = 18, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for Civil War
+  geom_text(data = data.frame(x = 1845, y = 16.5, label = "Civil War"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add vertical golden line for WWII
+  annotate("segment", 
+           x = 1941, 
+           y = -Inf, 
+           xend = 1941, 
+           yend = 28, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for WWII
+  geom_text(data = data.frame(x = 1920, y = 26.5, label = "World War II"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add line for I Have a Dream
+  annotate("segment", 
+           x = 1963 , 
+           y = -Inf, 
+           xend = 1963, 
+           yend = 38, 
+           color = "#D6AF00", 
+           size = 1) +
+  # add text for I Have a Dream
+  geom_text(data = data.frame(x = 1905, y = 36.5, label = "March on Washington: I Have a Dream"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE
+  ) +
+  
+  # add labels
+  labs(title = "A Stroll through American History",
+       subtitle = "Number of \"Firsts\" over Time") +
+  NULL
+
+```
+
+```{r}
+
+firsts %>% 
+  # count number of "firsts" in each bin
+  count(year_bins_2) %>%
+  
+  # initiate ggplot
+  ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
+  geom_line(size = 1, color = "#04314D") + 
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add vertical golden line for Civil War
+  annotate("segment", 
+           x = 1861 , 
+           y = -Inf, 
+           xend = 1861, 
+           yend = 18, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for Civil War
+  geom_text(data = data.frame(x = 1845, y = 16.5, label = "Civil War"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add vertical golden line for WWII
+  annotate("segment", 
+           x = 1941, 
+           y = -Inf, 
+           xend = 1941, 
+           yend = 28, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for WWII
+  geom_text(data = data.frame(x = 1920, y = 26.5, label = "World War II"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add line for I Have a Dream
+  annotate("segment", 
+           x = 1963 , 
+           y = -Inf, 
+           xend = 1963, 
+           yend = 38, 
+           color = "#D6AF00", 
+           size = 1, 
+           alpha = 0.2) +
+  # add text for I Have a Dream
+  geom_text(data = data.frame(x = 1905, y = 36.5, label = "March on Washington: I Have a Dream"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE,
+            alpha = 0.2
+  ) +
+  
+  # add line for Barack Obama
+  annotate("segment", 
+           x = 2008 , 
+           y = -Inf, 
+           xend = 2008, 
+           yend = 48, 
+           color = "#D6AF00", 
+           size = 1) +
+  # add text for Barack Obama
+  geom_text(data = data.frame(x = 1952, y = 46.5, label = "First Black President: Barack Obama"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE
+  ) +
+  
+  # add labels
+  labs(title = "A Stroll through American History",
+       subtitle = "Number of \"Firsts\" over Time") +
+  NULL
+
+
+```
+
+
+```{r}
+
+firsts %>% 
+  # count number of "firsts" in each bin
+  count(year_bins_2) %>%
+  
+  # initiate ggplot
+  ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
+  geom_line(size = 1, color = "#04314D") + 
+  
+  # add LOESS model line
+  geom_smooth(method = "loess", 
+              se = FALSE,
+              color = "#D6AF00") + 
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add labels
+  labs(title = "When will be the next Boost in \"Firsts\"?",
+       subtitle = "Number of \"Firsts\" over Time") +
+  
+  # add arrow to left plateau
+  geom_curve(data = data.frame(x = 1843, y = 33, xend = 1882, yend = 8.4),
+             mapping = aes(x = x, y = y, xend = xend, yend = yend),
+             colour = "black",
+             curvature = 0,
+             arrow = arrow(length = unit(2, "mm"), type = "closed"),
+             inherit.aes = FALSE) +
+  
+  # add arrow to right plateau
+  geom_curve(data = data.frame(x = 1845, y = 34, xend = 1995, yend = 26),
+             mapping = aes(x = x, y = y, xend = xend, yend = yend),
+             colour = "black",
+             curvature = 0,
+             arrow = arrow(length = unit(2, "mm"), type = "closed"),
+             inherit.aes = FALSE) +
+  
+  # add text
+  geom_text(data = data.frame(x = 1821.5, y = 34.7, label = "Two Plateaus"),
+            aes(x = x, y = y, label = label),
+            colour = "black",
+            family = "Lato",
+            inherit.aes = FALSE
+  ) +
+  NULL
+
+```
+
+We can see that there is basically a boost all 100 years!
+
+## Geographical Distribution of "Firsts"
 
 ```{r maps 1}
 
@@ -815,6 +1159,7 @@ firsts_jitter_sf_animate <- firsts_jitter_sf %>%
 
 # visualise population density and locations of "firsts" over time
 p <- ggplot() +
+  
   # draw polygons from counties shapefile,
   # fill with population density
   geom_sf(data = counties_pop_sf, aes(fill = dens_2), 
@@ -828,11 +1173,14 @@ p <- ggplot() +
                                "#114966", 
                                "#04314D"),
                     name = "Pop. per sq. mile") +
+  
   # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_animate, aes(fill = gender), 
+    data = firsts_jitter_sf_animate, 
+    aes(fill = gender), 
     size = 9, 
     shape = 21,
     show.legend = TRUE,
@@ -840,13 +1188,15 @@ p <- ggplot() +
   ) + 
   # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
+  
+  # add labels
   labs(subtitle = "Year: {previous_frame} - {current_frame}",
        title = "Location of \"Firsts\" and Population Density over Time",
        fill  = "Gender") + 
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(size = 28, 
                             family = "Lato", 
@@ -857,6 +1207,7 @@ p <- ggplot() +
         plot.title = element_text(size = 36, 
                             family = "Lato", 
                             colour = "black")) +
+  
   # animate the "firsts" and pop density over the years
   transition_manual(year) + 
   NULL
@@ -874,15 +1225,19 @@ p <- ggplot() +
 
 ```{r maps 2, cache = TRUE}
 
-## Before Civil War:
+## Filter for data before Civil War:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year <= 1860)
 
-# average population density before civil war
+# compute relevant average population density
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 1860) %>% 
+  
+  # calculate average population density
   group_by(county_fips) %>% 
   summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  
+  # cut into bins as in the data transformation part
   mutate(dens_2 = cut(dens_agg, 
                       breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
                       labels = c("[0, 2]", 
@@ -896,23 +1251,36 @@ counties_pop_sf_filtered <- counties_pop_sf %>%
 
 ggplot() +
   # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+  # fill with population density
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"),
                     name = "Pop. per sq. mile") +
+  
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE, color = "white"
+    data = firsts_jitter_sf_filtered, 
+    aes(fill = gender), 
+    size = 3, 
+    shape = 21,
+    show.legend = TRUE, 
+    color = "white"
   ) + 
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
-  labs(subtitle = "before 1860",
+  
+  # add labels
+  labs(subtitle = "before 1861",
        title = "Location of \"Firsts\" and Population Density",
        fill  = "Gender") +
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(family = "Lato", 
                             colour = "black"),
@@ -923,14 +1291,19 @@ ggplot() +
   NULL
 
 
-## Before WWII:
+## Filter for data before WWII:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1861, year < 1941)
 
+# compute relevant average population density
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 1940, year >= 1860) %>% 
+  
+  # calculate average population density
   group_by(county_fips) %>% 
   summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  
+  # cut into bins as in the data transformation part
   mutate(dens_2 = cut(dens_agg, 
                       breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
                       labels = c("[0, 2]", 
@@ -944,23 +1317,36 @@ counties_pop_sf_filtered <- counties_pop_sf %>%
 
 ggplot() +
   # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+  # fill with population density
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"),
                     name = "Pop. per sq. mile") +
+  
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE, color = "white"
+    data = firsts_jitter_sf_filtered, 
+    aes(fill = gender), 
+    size = 3, 
+    shape = 21,
+    show.legend = TRUE, 
+    color = "white"
   ) + 
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
-  labs(subtitle = "1861 - 1941",
+  
+  # add labels
+  labs(subtitle = "1861 - 1940",
        title = "Location of \"Firsts\" and Population Density",
        fill  = "Gender") +
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(family = "Lato", 
                             colour = "black"),
@@ -970,15 +1356,19 @@ ggplot() +
                                      colour = "black")) +
   NULL
 
-
-## Before 1963:
+## Filter for data efore 1963:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1941, year < 1963)
 
+# compute relevant average population density
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 1960, year >= 1940) %>% 
+  
+  # calculate average population density
   group_by(county_fips) %>% 
   summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  
+  # cut into bins as in the data transformation part
   mutate(dens_2 = cut(dens_agg, 
                       breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
                       labels = c("[0, 2]", 
@@ -992,23 +1382,36 @@ counties_pop_sf_filtered <- counties_pop_sf %>%
 
 ggplot() +
   # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+  # fill with population density
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"),
                     name = "Pop. per sq. mile") +
+  
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE, color = "white"
+    data = firsts_jitter_sf_filtered, 
+    aes(fill = gender), 
+    size = 3, 
+    shape = 21,
+    show.legend = TRUE, 
+    color = "white"
   ) + 
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
-  labs(subtitle = "1941 - 1963",
+  
+  # add labels
+  labs(subtitle = "1941 - 1962",
        title = "Location of \"Firsts\" and Population Density",
        fill  = "Gender") +
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(family = "Lato", 
                             colour = "black"),
@@ -1019,14 +1422,19 @@ ggplot() +
   NULL
 
 
-## Before 2008:
+## Filter for data before 2008:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1963, year < 2008)
 
+# compute relevant average population density
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 2010, year >= 1960) %>% 
+  
+  # calculate average population density
   group_by(county_fips) %>% 
   summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  
+  # cut into bins as in the data transformation part
   mutate(dens_2 = cut(dens_agg, 
                       breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
                       labels = c("[0, 2]", 
@@ -1040,23 +1448,36 @@ counties_pop_sf_filtered <- counties_pop_sf %>%
 
 ggplot() +
   # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+  # fill with population density
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"),
                     name = "Pop. per sq. mile") +
+  
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE, color = "white"
+    data = firsts_jitter_sf_filtered, 
+    aes(fill = gender), 
+    size = 3, 
+    shape = 21,
+    show.legend = TRUE, 
+    color = "white"
   ) + 
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
-  labs(subtitle = "1963 - 2008",
+  
+  # add labels
+  labs(subtitle = "1963 - 2007",
        title = "Location of \"Firsts\" and Population Density",
        fill  = "Gender") +
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(family = "Lato", 
                             colour = "black"),
@@ -1067,14 +1488,19 @@ ggplot() +
   NULL
 
 
-## After 2008:
+## Filter for data after 2008:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 2008)
 
+# compute relevant average population density
 counties_pop_sf_filtered <- counties_pop_sf %>% 
   filter(year <= 2020, year >= 2000) %>% 
+  
+  # calculate average population density
   group_by(county_fips) %>% 
   summarise(dens_agg = mean(dens), geometry = first(geometry)) %>% 
+  
+  # cut into bins as in the data transformation part
   mutate(dens_2 = cut(dens_agg, 
                       breaks = c(-0.1, 2, 6, 18, 45, 90, max(dens_agg)),
                       labels = c("[0, 2]", 
@@ -1088,23 +1514,36 @@ counties_pop_sf_filtered <- counties_pop_sf %>%
 
 ggplot() +
   # draw polygons from counties shapefile
-  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), color = "#367696") +
-  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"), ##e9eff2
+  # fill with population density
+  geom_sf(data = counties_pop_sf_filtered, aes(fill = dens_2), 
+          color = "#367696") +
+  # define colours for population density fill
+  scale_fill_manual(values = c("#e9eff2", "#93b4c4", "#57859c", "#2d627d", "#114966", "#04314D"),
                     name = "Pop. per sq. mile") +
+  
+  # enable a new "fill" dimension for gender
   new_scale_fill() + 
-  # add points from firsts shapefile
+  
+  # add locations from firsts shapefile
   geom_sf(
-    data = firsts_jitter_sf_filtered, aes(fill = gender), size = 3, shape = 21,
-    show.legend = TRUE, color = "white"
+    data = firsts_jitter_sf_filtered, 
+    aes(fill = gender), 
+    size = 3, 
+    shape = 21,
+    show.legend = TRUE, 
+    color = "white"
   ) + 
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
-  # add titles
-  labs(subtitle = "2008 - today",
+  
+  # add labels
+  labs(subtitle = "from 2008",
        title = "Location of \"Firsts\" and Population Density",
        fill  = "Gender") +
+  
   # customize theme
   theme_minimal()+
-  coord_sf(datum = NA) + #remove coordinates
+  coord_sf(datum = NA) + # remove coordinates
   theme(axis.text = element_blank(),
         text = element_text(family = "Lato", 
                             colour = "black"),
@@ -1167,12 +1606,19 @@ sex_count_wider %>%
        x = "Year",
        y = "Number of Firsts",
        caption = "") +
+  # customize theme
   theme_minimal() + 
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black"))
   NULL
 
 ```
@@ -1208,7 +1654,8 @@ gender_category_df %>%
   ggplot(aes(y = pct_category_firsts, x = 
                reorder(category,desc(pct_category_firsts)),fill=gender)) +
   geom_col(width = 0.7, position='dodge')+
-  scale_fill_manual(values = c("#D6AF00", "#4D0B0C")) +
+  scale_fill_manual(values = c("#D6AF00", "#4D0B0C"),
+                    name = "Gender") +
   geom_text(
     aes(label = ifelse(gender=="male" & pct_category_firsts < 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
     color = "white", 
@@ -1240,11 +1687,10 @@ gender_category_df %>%
   theme_minimal() +
   scale_y_continuous(labels = scales::percent)+
  # scale_x_reordered()+
-  labs(title = "Firsts by Gender and Category",
-       x     = "",
-       y     = "",
-       fill  = "Gender")+
-  theme(#axis.text.x = element_text(angle = 90),
+  labs(title = "African-American Achievements follow stereotypical Gender Roles!",
+       subtitle  = "Firsts by Gender and Category")+
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
         panel.grid = element_blank(),
         axis.text.y = element_blank(),
         text = element_text(family = "Lato", 
@@ -1254,11 +1700,204 @@ gender_category_df %>%
                                   colour = "black",
                                   size = 18),
         plot.subtitle = element_text(family = "Lato", 
-                                     colour = "black")) +
+                                     colour = "black",
+                                     size = 15)) +
   NULL
 
 ```
 
-Looking at the Firsts over Categories for African American Men and Women, we see that there are certain trends: Women's firsts are most prelevant in the Arts and Entertainment sectors, however they are also present in the Education and Sciences. For Men, the Sciences and Military Sector are pretty strong, as well as Politics. 
+Looking at the Firsts over Categories for African American Men and Women, we see that there are certain trends: Women's firsts are most prevalent in the Arts and Entertainment sectors, however they are also present in the Education and Sciences. For Men, the Sciences and Military Sector are pretty strong, as well as Politics. 
 This confirms the alleged gender bias and overrepresentation of males in technical and political spheres wheras women are traditionally pushed into the Arts and Social sectors. 
 
+## Age Distribution by Category
+
+```{r}
+# pipe data
+firsts %>%
+  
+  # filter na values
+  filter(!is.na(age_bins)) %>% 
+  
+  # group by age and category
+  group_by(age_bins, category) %>% 
+  
+  # count number of individuals for each age interval and category
+  count() %>% 
+  
+  # create bar chart showing age distribution for different categories
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_col(fill = "#04314D") +
+  
+  # label graph
+  labs(title = "Different \"Firsts\" are typically achieved with different ages!",
+     #subtitle = "Categories like sports have relatively young firsts, whereas categories like politics have older firsts",
+     subtitle = "Number of \"Firsts\" by Age and Category",
+     x = "Age",
+     y = "Number of \"Firsts\"") +
+  
+  # create multi-panel plots by category
+  facet_wrap(~category) +
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  NULL
+
+
+```
+
+From this multi-planel bar graph, we can see that different categories have different age distributions. The firsts in categories like Art & Entertainment, Sports, Education & Science, and Social & Jobs are relatively young, whereas those firsts in categories like Politics and the Military are relatively older. We are unable to make conclusions on the age trends of categories in the religion and law as we do not have too many data points for these respective categories. We can see that the age trends between the Sports and Politics category are very different so let's dive deeper into these 2 categories:
+
+```{r two_category}
+
+# pipe data
+firsts %>%
+  
+  # filter na values
+  filter(!is.na(age_bins)) %>% 
+  
+  # group by age and category
+  group_by(age_bins, category) %>% 
+  
+  # filter for 2 categories that show contrasting findings in age intervals
+  filter(category == "Sports" | category == "Politics")  %>%
+  
+  # order Sports before Politics
+  mutate(category = factor(category, levels = c("Sports", "Politics"))) %>% 
+  
+  # count number of individuals for each age interval and category
+  count() %>% 
+  
+  # create bar chart showing age distribution for two categories
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_col(fill = "#04314D") +
+  
+  # label graph
+  labs(title = "\"Firsts\" in Sports are generally achieved in a younger age than \"Firsts\" in Politics",
+     # subtitle = "Firsts in sports are often times in their 25s whereas firsts in politics are often times in their 50s",
+     subtitle = "Number of \"Firsts\" by Age and Category",
+     x = "Age",
+     y = "Number of \"Firsts\"") +
+  
+  # create multi-panel plots by category
+  facet_wrap(~category) +
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  NULL
+  
+```
+
+From the zoomed-in comparison of the two categories, we can see that the age distribution between the sports and politics category is very different. This may be because individuals who work in the political sector are generally older than those who work in sports. In addition, the politics sector has also been slightly more hierarchical compared to the sports sector. These two explanations ensure that the findings from the plot is reasonable. 
+
+## Firsts per State
+
+```{r}
+
+states <- firsts %>% 
+  filter(!is.na(state)) %>% #removing NAs from the data
+  count(state) %>% 
+  mutate(tot  = sum(n), 
+         pct = round(n/sum(n)*100, 1),
+         NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
+  filter(pct > 3) %>% 
+  arrange(desc(n))
+
+ggplot(states, aes(x =  pct, 
+                   # order by counts and fill New York
+                   y = reorder(state, pct), fill = NY)) +  
+  
+  geom_col() + 
+  
+  scale_fill_manual(values = c("grey80", "#04314D")) + 
+  
+  scale_x_continuous(expand = expansion(mult = c(0, 0))) +
+  
+  # adding the percentages on the columns
+  geom_text(
+    aes(label = paste0(pct, "%")),
+    colour = "white",
+    size = 4,
+    hjust = 1.2,
+    family="Lato")+
+  
+  # adding the comment on new york 
+  geom_text(
+    data = data.frame(x = 7, y = 3.5, label = "New York outnumbers"),
+    aes(x = x, y = y, label = label),
+    colour="black",
+    family="Lato",
+    size = 4,
+    hjust = 1,
+    lineheight = .6,
+    inherit.aes = FALSE)+
+  geom_text(
+    data = data.frame(x = 6.65, y = 2.7, label = "all other states"),
+    aes(x = x, y = y, label = label),
+    colour="black",
+    family="Lato",
+    size = 4,
+    hjust = 1,
+    lineheight = .6,
+    inherit.aes = FALSE)+
+  
+  # adding the arrow pointing on the New York Column
+  geom_curve(
+    data = data.frame(x = 6, y = 4, xend = 7.5, yend = 13),
+    mapping = aes(x = x, y = y, xend = xend, yend = yend),
+    colour = "black",
+    size = 0.5,
+    curvature = 0.18,
+    arrow = arrow(length = unit(2, "mm"), type = "closed"),
+    inherit.aes = FALSE) +
+  
+  # adding titles and subtitles
+  labs(title = "The most liberal States take the highest number of \"Firsts\"",
+       subtitle = "Percentage of \"Firsts\" per State",
+       caption = "") +
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot",
+        legend.position = "none") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black"),
+        ) +
+  NULL
+
+```
+
+
+Due to the growth in population in America being focused on the East Coast until around the 1920s, much earlier than parts for central and western America, it can be seen from the bar chart above that the number of firsts have been significantly higher. This could be due to the migration of communities over time. 
+
+The data collected starts from 1800, during which the percentage of "free" blacks was not uniform, the northern eastern region had a much higher percentage of free blacks throughout the 1800s which may have also contributed to the stark difference between the west and east during that time. The ablution of slavery in the 1860s additionally saw a huge impact in the growth of the firsts in African American communities. 
+
+New York had the highest count in firsts. New York State was one of the pioneer states to abolish slavery in 1827( It was officially abolished in 1863 in the US), and New York City had one of the largest concentration of free African Americans, with many institutions being established to support the community. 
