@@ -1,0 +1,131 @@
+---
+title: "Age Category Graph"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-libraries, warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(vroom)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+```
+
+## Age Category Graph 
+
+After observing how the age distribution varies between genders, let's see how the age distribution varies between categories!
+
+```{r age_category}
+
+# pipe data
+firsts_augmented <- firsts_augmented %>% 
+  
+  # create new variable called age to calculate age at which individual became first
+  mutate(age = year - year(bday),
+         
+         # create age intervals and set as character
+         age_bins = as.numeric(as.character(
+           cut(age, 
+               breaks=c(seq(0, 100, 10)), 
+               labels=c(seq(0, 90, 10)))
+           )))
+
+# pipe data
+firsts_augmented %>%
+  
+  # filter na values
+  filter(!is.na(age_bins)) %>% 
+  
+  # group by age and category
+  group_by(age_bins, category) %>% 
+  
+  # count number of individuals for each age interval and category
+  count() %>% 
+  
+  # create bar chart showing age distribution for different categories
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_col() +
+  
+  # use nice theme (MAY NEED TO CHANGE THIS)
+  theme_minimal() +
+  
+  # label graph
+  labs(title = "Age of Firsts Differ Between each Category!",
+     subtitle = "Categories like sports have relatively young firsts, whereas categories like politics have older firsts",
+     x = "Age",
+     y = "Number of Firsts") +
+  
+  # create multi-panel plots by category
+  facet_wrap(~category) +
+  
+  # adjust text font and size
+  theme(text=element_text(size=12, family="Times New Roman")) +
+  theme(plot.title.position = "plot") +
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_textbox_simple(size=16),
+    axis.title.y = element_text(size=12),
+    axis.title.x = element_text(size=12),
+    axis.text = element_text(size=14),
+    legend.position = "right") +
+  NULL
+```
+
+From this multi-planel bar graph, we can see that different categories have different age distributions. The firsts in categories like Art & Entertainment, Sports, Education & Science, and Social & Jobs are relatively young, whereas those firsts in categories like Politics and the Military are relatively older. We are unable to make conclusions on the age trends of categories in the religion and law as we do not have too many data points for these respective categories. We can see that the age trends between the Sports and Politics category are very different so let's dive deeper into these 2 categories.
+
+## Two Category Focus
+
+```{r two_category}
+
+# pipe data
+firsts_augmented %>%
+  
+  # filter na values
+  filter(!is.na(age_bins)) %>% 
+  
+  # group by age and category
+  group_by(age_bins, category) %>% 
+  
+  # filter for 2 categories that show contrasting findings in age intervals
+  filter(category == "Sports" | category == "Politics")  %>%
+  
+  # count number of individuals for each age interval and category
+  count() %>% 
+  
+  # create bar chart showing age distribution for two categories
+  ggplot(aes(x = age_bins, y = n)) +
+  geom_col() +
+  
+  # use nice theme (MAY NEED TO CHANGE THIS)
+  theme_minimal() +
+  
+  # label graph
+  labs(title = "Firsts in Sports are Generally Younger than Those Firsts in Politics",
+     subtitle = "Firsts in sports are often times in their 25s whereas firsts in politics are often times in their 50s",
+     x = "Age",
+     y = "Number of Firsts") +
+  
+  # create multi-panel plots by category
+  facet_wrap(~category) +
+  
+  # adjust text font and size
+  theme(text=element_text(size=12, family="Times New Roman")) +
+  theme(plot.title.position = "plot") +
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_textbox_simple(size=16),
+    axis.title.y = element_text(size=12),
+    axis.title.x = element_text(size=12),
+    axis.text = element_text(size=14),
+    legend.position = "right") +
+  NULL
+  
+```
+ 
+From the zoomed-in comparison of the two categories, we can see that the age distribution between the sports and politics category is very different. This may be because individuals who work in the political sector are generally older than those who work in sports. In addition, the politics sector has also been slightly more hierarchical compared to the sports sector. These two explanations ensure that the findings from the plot is reasonable. 
+
+
