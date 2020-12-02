@@ -399,8 +399,8 @@ We will start by getting a `category` variable. To map each "first" into a categ
 edu <- c(
   "practice", "graduate", "learning", "college", "university", "medicine",
   "earn", "ph.d.", "professor", "teacher", "school", "nobel", "invent", "patent",
-  "medicine", "degree", "doctor", "medical", "nurse", "physician", "m.d.", "b.a.", "b.s.", "m.b.a",
-  "principal", "space", "astronaut", "scientific") %>% 
+  "medicine", "degree", "doctor", "medical", "nurse", "physician", "m.d.", "b.a.", "b.s.", 
+  "m.b.a", "principal", "space", "astronaut", "scientific") %>% 
   paste0(collapse = "|")
 
 religion <- c("bishop", "rabbi", "minister", "church", "priest", "pastor", "missionary",
@@ -446,7 +446,8 @@ social <- c("community", "freemasons", "vote", "voting", "rights", "signature",
             "royal", "ceo", "community", "movement", "invited", "greek", "million",
             "billion", "attendant", "chess", "pilot", "playboy", "own", "daughter",
             "coin", "dollar", "stamp", "niagara", "pharmacist",
-            "stock", "north pole", "reporter", "sail around the world", "sail solo around the world", "press", "miss ",
+            "stock", "north pole", "reporter", "sail around the world", 
+            "sail solo around the world", "press", "miss ",
             "everest")  %>%
   paste0(collapse = "|")
 
@@ -1067,6 +1068,7 @@ firsts %>%
 On broad terms, we could say that the need for men in the military drove integration. In 1941 fewer than 4,000 African Americans were serving in the military and, by contrast, in 1945 1,2 million individuals of colour were wearing the military uniform. EVen if they were fighting in a segregates style, the sense of unity and camaraderie sparked a process of inclusion that later developed in the society after WWII.
 
 Looking at the firsts during the War, we could list (1939-45):
+
 - The first Graduate of the U.S. Naval Academy
 - First African-American flag officer
 - First African-American to be awarded the Navy Cross
@@ -1076,6 +1078,7 @@ Looking at the firsts during the War, we could list (1939-45):
 These are all very intertwined with the inclusion of African Americans in the military environment. Nevertheless, the forced connection from fighting in the same ranks and the marketing campaigns from the government to motivate people of colour to join the army were normalizing the inclusion of black people back in the US.
 
 On that note, the following list addresses non military firsts that occurred during the war in non military related fields:
+
 - First African American to star in her own television program
 - First African American to be portrayed on a U.S. postage stamp
 - First African American to win an Oscar
@@ -1435,13 +1438,13 @@ p <- ggplot() +
 
 # render gif and save it
 # animate(p, fps = 2, height = 800, width = 1600)
-# anim_save("firsts_over_time.gif", animation = last_animation())
+# anim_save("../misc/firsts_over_time.gif", animation = last_animation())
 
 
 ```
 
 
-![](../code/firsts_over_time.gif)  
+![](../misc/firsts_over_time.gif)  
 
 This is quite impressive! We can clearly see the forward wave of American expansion to the West, that ended with the admission of the last few territories as states in 1912. As the great majority of the U.S. population lives in the east, it is only natural that most achievers come from there. Only from the middle of the 20th century onward we also have achievers coming from the big cities at the West coast. 
 
@@ -1942,7 +1945,7 @@ gender_category_df %>%
   
   # add labels
   labs(title = "African-American Achievements follow stereotypical Gender Roles!",
-       subtitle = "Firsts by Gender and Category")+
+       subtitle = "Proportion of \"Firsts\" per Category by Gender")+
   
   # customize theme
   theme_minimal() +
@@ -2198,4 +2201,16 @@ We hope that our work contributes to raising awareness about the crucial topic o
 [source](https://giphy.com/gifs/lgbtq-power-of-our-pride-equality-town-hall-Vhu98PhgRWhpjmmzBH)
 
 # Limitations
+
+We must not fail to mention the limitations of our work.
+
+First, we fully relied on the list of "Firsts" provided by [Wikipedia](https://en.wikipedia.org/wiki/List_of_African-American_firsts). 
+We have no insights into how accurate or complete this list is.  
+
+Second, some of the "Firsts" are not attributable to a single person. Naturally, such achievements could not find their way into our analyses around gender and age. However, as we also based our geospatial analyses on individual persons by scraping their location of birth, such cases could also not find their way into our maps. 
+
+Next, web scraping is always prone to errors. Even though we did our best to address edge cases, we cannot rule out that there are some errors in the data.  
+Adding to this point, we inferred gender by using descriptions and the `gender` library. Again, we cannot rule out errors here. We want to stress that any problems with the data are only due to technical difficulties. In no way do we want to offend any person or family with erroneous data. Please reach out to us if you find any irregularities. 
+
+Finally, we put in a lot of effort to research (African-)American History. Sources include [history.com](https://www.history.com/topics/black-history/black-history-milestones) and [archives.gov](https://www.archives.gov/research/african-americans). However, it might be the case that we missed to present or mention subtle nuances of historic events. We encourage all readers to investigate African-American History themselves and we apologize for any inconsistencies. We are fully aware of the potential brisance of this topic. 
 
