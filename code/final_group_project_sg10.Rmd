@@ -94,7 +94,7 @@ As indicated above, the process of data extraction, enrichment, and cleaning is 
 We will execute the following steps:
 
 - We will first scrape the list of **African-American Firsts**, that can be found on [Wikipedia](https://en.wikipedia.org/wiki/List_of_African-American_firsts).
-- After that, we will scrape the individual [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) webpage of each individual achiever to get their birthdays and birth locations. 
+- After that, we will scrape the individual [Wikipedia](https://en.wikipedia.org/wiki/Main_Page) webpages of each individual achiever to get their birthdays and birth locations. 
 - Third, we will use the scraped location information to get geospatial information via forward geocoding.
 - Fourth, we infer the gender of each achiever and the category of the achievement. 
 - Finally, we clean up loose ends, load shapefiles for America and enrich this geospatial data by adding [population information](https://conservancy.umn.edu/handle/11299/181605).
@@ -277,6 +277,7 @@ extract_bday_location <- function(wiki){
     bd <- toString(bd)
   }
 
+  
   # extract birth location by parsing the raw HTML
   
   # parse raw HTML to find birth location
@@ -377,6 +378,7 @@ clean_first_augmented <- suppressMessages(clean_first_augmented %>%
 
 # clean up
 rm(opencage_custom)
+
 ```
 
 
@@ -588,10 +590,14 @@ For our analysis, we need a binned `year` variable and a variable `age`, that me
 # cut year into buckets 
 # needed for gganimate and the timeline
 firsts <- firsts %>% 
+  
+  # binwidth = 10 years
   mutate(year_bins = cut(year, 
                         breaks = c(min(year)-1, c(seq(1790, 2020, 10))), 
                         labels = c(seq(1790, 2020, 10)))) %>% 
   mutate(year_bins = as.integer(levels(year_bins))[year_bins]) %>% 
+  
+  # binwidth = 5 years
   mutate(year_bins_2 = cut(year, 
                         breaks = c(min(year)-1, c(seq(1760, 2020, 5))), 
                         labels = c(seq(1760, 2020, 5)))) %>% 
@@ -602,6 +608,8 @@ firsts <- firsts %>%
 # also cut age into buckets
 firsts <- firsts %>% 
   mutate(age = year - year(bday)) %>% 
+  
+  # binwidth = 10 years
   mutate(age_bins = cut(age, 
                         breaks = c(seq(0, 100, 10)), 
                         labels = c(seq(0, 90, 10)),
@@ -631,7 +639,8 @@ Great, that should be it! We conclude this section by describing the resulting t
 |county |character | Location of birth of the achiever: County |
 |city |character | Location of birth of the achiever: City |
 |fips_state |character | Location of birth of the achiever: FIPS of State |
-|year_bins |integer | Binned year of the achievement |
+|year_bins |integer | Binned year of the achievement, binwidth = 10 years |
+|year_bins_2 |integer | Binned year of the achievement, binwidth = 5 years |
 |age |double | Age of person when the "first" was achieved |
 |age_bins |integer | Binned age |
 
@@ -642,20 +651,14 @@ To be able to plot our data on a map, we need the shapefiles of the US and we ha
 
 ```{r shapefiles}
 
-# load states shapefile
-states_sf <- get_urbn_map("states", sf = TRUE)
-
-# transfrom geometry to 4326, or pairs of latitude/longitude numbers
-states_sf <-  states_sf %>% 
-  st_transform(4326) # transfrom to WGS84, latitude/longitude
-
-
 # load counties shapefile
 counties_sf <- get_urbn_map("counties", sf = TRUE)
 
 # transfrom geometry to 4326, or pairs of latitude/longitude numbers
 counties_sf <-  counties_sf %>% 
-  st_transform(4326) # transfrom to WGS84, latitude/longitude
+  
+  # transfrom to WGS84, latitude/longitude
+  st_transform(4326) 
 
 
 # convert firsts to a sf object with jitter on coordinates
@@ -675,7 +678,7 @@ firsts_jitter_sf <- firsts %>%
   
   # convert to sf object
   st_as_sf(coords = c('lng', 'lat'), 
-           crs = st_crs(states_sf))
+           crs = st_crs(counties_sf))
 
 
 ```
@@ -764,7 +767,7 @@ rm(population, population_abs, population_dens, pop_2020)
 ```
 
 
-We end up having a ready-to-plot shapefile of "firsts", a shapefile to plot US states and a shapefile to plot US counties.
+We end up having a ready-to-plot shapefile of "firsts" and a shapefile to plot US counties.
 Additionally, we have a big shapefile `counties_pop_sf`, that holds information about the population in each US county
 since 1790!
 
@@ -778,9 +781,62 @@ Let's say goodbye to this technically demanding part of our work:
 
 # The Story
 
+Let us now analyse our nicely scraped and transformed data to celebrate **African-American Achievements**!  
+In the following, we will
+
+- look at the number of **African-American Firsts** over time and draw connections to American history
+- analyse where the achievers were born (geospatial analysis)
+- take a critical look at the gender gap and stereotypical gender roles
+- see how old the achievers were when breaking the colour barrier
+- investigate which states have given rise to most achievers
+
+Let us dive in!
+
+
 ## "Firsts" over Time and a Stroll through American History
 
+First, let us have a look at the number of **African-American Achievements** over time:
+
 ```{r history}
+
+firsts %>% 
+  # count number of "firsts" in each bin
+  count(year_bins_2) %>% 
+  
+  # initiate ggplot
+  ggplot(aes(x = year_bins_2, y = n)) +
+  # plot "firsts" over time as blue line
+  geom_line(size = 1, color = "#04314D") + 
+  
+  # customize theme
+  theme_minimal() + 
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title.position = "plot") +
+  theme(text = element_text(family = "Lato", 
+                            colour = "black"),
+        plot.title = element_text(family = "Lato", 
+                                  colour = "black"),
+        plot.subtitle = element_text(family = "Lato", 
+                                     colour = "black")) +
+  
+  # add labels
+  labs(title = "A Stroll through American History",
+       subtitle = "Number of \"Firsts\" over Time") +
+  
+  NULL
+
+```
+
+We can clearly identify that there is a positive trend! However, there are a lot of ups and downs. What causes these spikes in the number of "Firsts"? We did extensive research, that we present in the following paragraphs. Sources include [history.com](https://www.history.com/topics/black-history/black-history-milestones) and [archives.gov](https://www.archives.gov/research/african-americans). 
+
+### Civil War
+
+Moving along the timeline, the first spike we see occurs around the 1860s. Any of us that take interest in the US history would know that these are the years of the Civil War, taking place from 1861 to 1865. This period has a central focus in the long standing controversy of black people's enslavement and naturally stands out as a moment of deep change for the African American community in the US.
+
+```{r hist civil war}
 
 firsts %>% 
   # count number of "firsts" in each bin
@@ -824,11 +880,22 @@ firsts %>%
   # add labels
   labs(title = "A Stroll through American History",
        subtitle = "Number of \"Firsts\" over Time") +
+  
   NULL
 
 ```
 
-```{r}
+In more detail, even if central in the dispute between secessionists and unionists, the banning of slavery was not the initial reason of the dispute. The southern states saw fit to split from the Union and saw slavery as a focal point of divergence. At the very beginning of the war, Lincoln's Union Army COULDN'T recruit black men because of a previous law. Out of necessity and with great uncertainty about the reactions of more racist states, the Union leader later passed a preliminary emancipation proclamation stating that "slaves within any State, or designated part of a State… in rebellion, …shall be then, thenceforward, and forever free".
+
+This was a very strategic move as it brought roughly 179,000 black men to serve as soldiers in the Army and fight for the Union. Moreover, it deprived the Confederacy of a great bulk of its labour force, unsettling the socio-economic dynamics of the secessionists.
+
+As slavery was considered illegal after the end of the Civil War, African Americans enjoyed a period when they were allowed to vote, actively participate in the political process, acquire the land of former owners, seek their own employment, and use public accommodations. With this, a great deal of firsts arose and are clearly shown in our graph.
+
+### The Aftermath and WWII
+
+The second large increase is close to the beginning of the second half of the 20th century. It takes very little historical knowledge to link this date to the Second World War, but let's see in more detail how did this horrible period shape positively the African American Opportunities in society.
+
+```{r hist wwII}
 
 firsts %>% 
   # count number of "firsts" in each bin
@@ -890,12 +957,39 @@ firsts %>%
   # add labels
   labs(title = "A Stroll through American History",
        subtitle = "Number of \"Firsts\" over Time") +
+  
   NULL
-
 
 ```
 
-```{r}
+On broad terms, we could say that the need for men in the military drove integration. In 1941 fewer than 4,000 African Americans were serving in the military and, by contrast, in 1945 1,2 million individuals of colour were wearing the military uniform. EVen if they were fighting in a segregates style, the sense of unity and camaraderie sparked a process of inclusion that later developed in the society after WWII.
+
+Looking at the firsts during the War, we could list (1939-45):
+- The first Graduate of the U.S. Naval Academy
+- First African-American flag officer
+- First African-American to be awarded the Navy Cross
+- First African-American member of the U.S. Marine Corps
+- First African-American U.S. Marine Corps officer
+
+These are all very intertwined with the inclusion of African Americans in the military environment. Nevertheless, the forced connection from fighting in the same ranks and the marketing campaigns from the government to motivate people of colour to join the army were normalizing the inclusion of black people back in the US.
+
+On that note, the following list addresses non military firsts that occurred during the war in non military related fields:
+- First African American to star in her own television program
+- First African American to be portrayed on a U.S. postage stamp
+- First African American to win an Oscar
+- First African-American artists to have a #1 hit on the Billboard charts
+- First African-American woman to earn a Ph.D. in mathematics
+
+To finalize this chapter of African American History, it is important to mention the Second Great Migration. This was a demographic shift of a great number of black individuals towards the nothern states. People of colour were convinced to move/change life due to the financially appealing offers from defense related factories in the North that were experiencing shortages. As a great amount of African Americans moved to more liberal states they enjoyed more freedom (exemplified by the right to vote), and hence initiated a healing/improvement process that would see the Black community empowered by opportunity.
+
+It is for the events above and for the outcome of WWII that "The Pittsburgh courier" stated this war period as a "Double Victory", over the Nazis in Europe and over racists at home.
+
+### I have a Dream Speech / Civil Rights Movement
+
+Even if significant in the breakthrough of African Americans in Society, the above events couldn't be enough to find equality between people of colour and white Americans. Specifically, after the 1860s very few relevant laws were passed with the intention of protecting black people's rights. It is for this reason that, between 1955 and 1968, non violent large mass protests took place with the intention of disrupting the normal functioning of urban centers and forcing a positive dialogue.
+
+
+```{r hist luther king}
 
 firsts %>% 
   # count number of "firsts" in each bin
@@ -975,11 +1069,20 @@ firsts %>%
   # add labels
   labs(title = "A Stroll through American History",
        subtitle = "Number of \"Firsts\" over Time") +
+  
   NULL
 
 ```
 
-```{r}
+It is needless to say that these protests received some part of resistance from conservative racists, especially in the southern part of the country. Without going in too much detail about this extremely eventful period in American History, the decade could be described as something that sets a before and an after. Specifically, people of colour were fighting for the end of segregation in education, healthcare, public transportation, legal representation and, more broadly speaking, political representation. They found the latter in Malcom X and Martin Luther King, being the loud voices that couldn't be ignored.
+
+Pairing this to the liberal views in Washington, represented by John F Kennedy, the outcome was painful but surely positive. As a result of this rough period, the Historic Civil RIghts Act was passed in 1964, officially outlawing discrimination based on sex, race, color, national origin or gender identity. With this breakthrough legislation, all future firsts have been greatly facilitated, as we can see from the spike in the late 1900s.
+
+### Barack Obama Becomes 44th U.S. President
+
+The most recent landmark event we want to highlight is the election of Barack Obama as the first African-American President of the United States of America.
+
+```{r hist obama}
 
 firsts %>% 
   # count number of "firsts" in each bin
@@ -1077,57 +1180,20 @@ firsts %>%
   # add labels
   labs(title = "A Stroll through American History",
        subtitle = "Number of \"Firsts\" over Time") +
+  
   NULL
-
 
 ```
 
-### Civil War
+Obama’s appearances in both the primaries and the general election drew impressive crowds, and his message of hope and change embodied by the slogan “Yes We Can” inspired thousands of new voters, many young and Black, to cast their vote for the first time in the historic election. He was reelected in 2012.
 
-Moving along the timeline, the first spike we see occurs around the 1860s. Any of us that take interest in the US history would know that these are the years of the Civil War, taking from 1861 to 1865. This period has a central focus in the long standing controversy of black people's enslavement and naturally stands out as a moment of deep change for the Afican American community in the US.
+### Further Remarks
 
-In more detail, even if central in the dispute between secessionists and unionists, the banning of slavery was not the initial reason of the dispute. The southern states saw fit to split from the Union and saw slavery as a focal point of divergence.At the very beginning of the war, Lincoln's Union Army COULDN'T recruit black men because of a previous law. Out of necessity and with great uncertainty about the reactions of more recist states, the Union leader later passed a preliminary emancipation proclamation stating that "slaves within any State, or designated part of a State…in rebellion,…shall be then, thenceforward, and forever free".
+What changes will future bring? With racist tendencies rising again all over the world in recent years, we pray for a future with **one** society and **equality for everyone**!
 
-This was a very strategic move as it it brought roughly 179,000 black men to serve as soldiers in the Army and fight for the Union. Moreover, it deprived the Confederacy of a great bulk of its labour force, unsettling the socio-economic dynamics of the secessionists.
+Using local polynomial regression fitting (LOESS = locally estimated scatterplot smoothing), we find an interesting pattern in our data:
 
-As slavery was considered illegal after the end of the Civil War, African Americans enjoyed a period when they were allowed to vote, actively participate in the political process, acquire the land of former owners, seek their own employment, and use public accommodations. With this, a great deal of firsts arised and are clearly shown in our graph.
-
-### The Aftermath and WWII
-
-The second large increase is close to the beginning of the second half of the 20th century. It takes very little historical knowledge to link this date to the Second World War, but let's see in more detail how did this horrible period shape positively the African American Opportunities in society.
-
-On broad terms, we could say that the need for men in the military drove integration. In 1941 fewer than 4,000 African Americans were serving in the military and, by contrast, in 1945 1,2 million individuals of colour were wearing the military uniform. EVen if they were fighting in a segregates style, the sense of unity and camaraderie sparked a process of inclusion that later developed in the society after WWII.
-
-Looking th the firsts during the War, we could list (1939-45):
-- The first Graduate of the U.S. Naval Academy
-- First African-American flag officer
-- First African-American to be awarded the Navy Cross
-- First African-American member of the U.S. Marine Corps
-- First African-American U.S. Marine Corps officer
-
-These are all very intertwined with the inclusion of African Americans in the military environment. Nevertheless, the forced connection from fighting in the same ranks and the marketing campaigns from the government to motivate people of color to join the army were normalizing the inclusion of black people back in the US.
-
-On that note, the following list adresses non military firsts that occurred during the war in non military related fields:
-- First African American to star in her own television program
-- First African American to be portrayed on a U.S. postage stamp
-- First African American to win an Oscar
-- First African-American artists to have a #1 hit on the Billboard charts
-- First African-American woman to earn a Ph.D. in mathematics
-
-To finalize this chapter of African American History, it is important to mention the Second Great Migration. This was a demographic shift of a great nu
-mber of black individuals towards the nothern states. People of colour were convinced to move/change life due to the finacially appealing offers from defence related factories in the North that were experiencing shortages. As a great amount of African Americans moved to more liberal states they enjoyed more freedom (exemplified by the right to vote), and hence initiateda an healing/improvement process that would see the Black community empowered by opportunity.
-
-It is for the events above and for the outcome of WWII that "The Pittsburgh courier" stated this war peirod as a "Double Victory", over the nazis in Europe and over racists at home.
-
-#### I have a Dream Speech / Civil Rights Movement
-
-Even if significant in the breakthough of African Americans in Society, the above events couldn't be enough to find equality between people of colour and white Americans. Specifically, after the 1860s very few relevant laws were passed with the intention of protecting black people's rights. It is for this reason that, between 1955 and 1968, non violent large mass protests took place with the intention of disrupting the normal funcioning of urban centers and forcing a positive dialogue.
-
-It is needless to say that these protests received some part of resistance from conservative racists, especially in the southen part of the country. Without going in too much of detail about this extremely eventful period in American History, the decade could be described as something that sets a before and an after. Specifically, people of colour were fighting for the end of segregation in education, healthcare, public transportation, legal representation and, more broadly speaking, political representation. They found the latter in Malcom X and Martin Luther King, being the loud voices that couldn't be ignored.
-
-Pairing this to the liberal views in Washington, represented by John F Kennedy, the outcome was painful but surely positive. As a result of this rough period, the Historic Civil RIghts Act was passed in 1964, officially outlawing discrimination based on sex, race, color, national origin or gender identity. With this breakthough legislation, all future firsts have been greatly facilitated, as we can see from the spike in the late 1900s.
-
-```{r}
+```{r hist model}
 
 firsts %>% 
   # count number of "firsts" in each bin
@@ -1184,13 +1250,23 @@ firsts %>%
             family = "Lato",
             inherit.aes = FALSE
   ) +
+  
   NULL
 
 ```
 
-We can see that there is basically a boost all 100 years!
+We can see that there is a boost in "Firsts" basically all 100 years! As we have analysed, especially the Civil War as well as WWII and the Civil Rights Movement have pushed numbers. Hopefully, the next boost is not 100 years away and is not facilitated by a war!
+
+![](../misc/love.gif)  
+[source](https://giphy.com/gifs/IntoAction-VzeF077i8nOgnRS917)
 
 ## Geographical Distribution of "Firsts"
+
+We are not only interested in the mere number of "Firsts" over time, but we also want to know where our African-American achievers came from!
+
+As it is only natural that states with a higher population density give rise to more achievers, we plot the locations of
+African-American Achievers over time, together with the population density over time:
+
 
 ```{r maps 1}
 
@@ -1251,6 +1327,7 @@ p <- ggplot() +
   
   # animate the "firsts" and pop density over the years
   transition_manual(year) + 
+  
   NULL
 
 
@@ -1263,6 +1340,10 @@ p <- ggplot() +
 
 
 ![](../code/firsts_over_time.gif)  
+
+This is quite impressive! We can clearly see the forward wave of American expansion to the West, that ended with the admission of the last few territories as states in 1912. As the great majority of the U.S. population lives in the east, it is only natural that most achievers come from there. Only from the middle of the 20th century onward we also have achievers coming from the big cities at the West coast. 
+
+Let us have a deeper look at those periods in time, that we have analysed above:
 
 ```{r maps 2, cache = TRUE}
 
@@ -1329,7 +1410,15 @@ ggplot() +
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
+
+```
+It is not surprising that there are very few "Firsts" before the Civil War. Achievements were particularly focused on the east coast, with people coming especially from the big cities of that time: New York, Washington DC, Boston or Atlanta.
+
+Looking at this map and the next one, we can also see how fast Americans settled in all parts of the country!
+
+```{r maps 3, cache = TRUE}
 
 
 ## Filter for data before WWII:
@@ -1395,9 +1484,17 @@ ggplot() +
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
 
-## Filter for data efore 1963:
+```
+
+Between the Civil War and World War II, again most achievers came from the leading cultural and political regions of the US.
+By that time, no African-American Achiever has been born in the West of the US!
+
+```{r maps 4, cache = TRUE}
+
+## Filter for data before 1963:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1941, year < 1963)
 
@@ -1460,8 +1557,15 @@ ggplot() +
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
 
+```
+
+In the aftermath of WWII and the rise of the Civil Rights Movement, the "Firsts" are more spread over the whole country. Centers like San Francisco or Los Angeles are catching up.
+
+
+```{r maps 5, cache = TRUE}
 
 ## Filter for data before 2008:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
@@ -1526,8 +1630,15 @@ ggplot() +
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
 
+```
+
+Between 1963 and 2007 it is clearly visible that change especially happens in the world-open metropolises of the US, namely Los Angeles, Washington DC, New York and Boston.
+
+
+```{r maps 6, cache = TRUE}
 
 ## Filter for data after 2008:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
@@ -1592,13 +1703,12 @@ ggplot() +
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
-
 
 ```
 
-going west
-cultural center --> New York, Boston, LA, ..
+We hope for the change and love to spread further and also to rise from more rural regions in the (mid-) West!
 
 ## Gender Gap over Time
 
@@ -1659,10 +1769,12 @@ sex_count_wider %>%
         plot.title = element_text(family = "Lato", 
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
-                                     colour = "black"))
+                                     colour = "black")) +
+  
   NULL
 
 ```
+
 Although African-Americans have growing achievements over the years, the gender
 gaps have also been broaden. In the two spikes of 1860s and 1940s, male number
 grew much more than female, and the difference between sex stays in following 
