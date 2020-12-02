@@ -1,0 +1,69 @@
+---
+title: "Wrangling and Testing"
+author: "Study Group 10"
+date: "15/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = TRUE)
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r libraries, include=FALSE}
+
+library(tidyverse)
+library(vroom)
+library(janitor)
+library(sf)
+library(here)
+library(extrafont)
+library(ggtext)
+library(lubridate)
+library(rvest)
+library(parsedate)
+library(opencage)
+library(gender)
+#install.packages("genderdata", repos = "http://packages.ropensci.org")
+
+loadfonts(device="win")
+
+```
+
+# Celebrating Black Lives
+
+## Load Data
+
+```{r load raw}
+
+firsts <- read_csv(here("../data/firsts_augmented.csv"))
+science <- read_csv(here("../data/science.csv"))
+
+```
+
+## Playing around
+
+```{r science data}
+
+science %>% 
+  separate_rows(occupation_s, sep = "; ") %>% 
+  mutate(occupation = str_to_title(occupation_s)) %>% 
+  count(occupation, sort = TRUE)
+
+
+science %>% 
+  filter(str_detect(occupation_s, regex("statistician", ignore_case = TRUE))) %>% 
+  pull(links)
+
+```
+
+
+change Marco
+
+Test Deniz
+
+Hi team
+
+TESTTT
+Hi 

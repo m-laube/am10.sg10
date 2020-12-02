@@ -619,7 +619,109 @@ firsts <- firsts %>%
 
 ```
 
-Great, that should be it! We conclude this section by describing the resulting tibble:
+Additionally, we will analyse the gender gap and stereotypical gender roles regarding African-American Achievements.
+For this purpose, we transform the `firsts` dataframe into two dedicated dataframes:
+
+```{r gender data trafo}
+
+# calculate number of "firsts" by gender over the years
+sex_count <- firsts %>%
+  
+  # filter out NAs
+  filter(!is.na(gender),
+         !is.na(year_bins)) %>%
+  
+  # count "firsts" by gender and binned years
+  group_by(year_bins, gender) %>% 
+  count() %>% 
+  
+  # order by year
+  arrange(year_bins)
+
+
+# unfortunately, there was no data for the 1820 year bin
+# to have a truthful line chart, we have to add it manually
+sex_count_1820 <- sex_count %>% 
+  
+  # take year 1800 as blueprint
+  filter(year_bins == 1800) %>%
+  
+  # change year to 1820 and numbers to 0
+  mutate(year_bins = as.integer(1820),
+         n = as.integer(0))
+
+
+# add the 1820 year bin to the data
+sex_count <- bind_rows(sex_count, sex_count_1820)
+
+
+# bring numbers by gender and year into wide format
+# i.e. have "male" column and a "female" column per year bin
+sex_count_wider <- sex_count %>% 
+  
+  # make gender columns wider
+  pivot_wider(names_from = gender, values_from = n) %>% 
+  
+  # add missing values as 0
+  mutate(female = if_else(is.na(female), as.integer(0), female))
+
+
+# also have the data in long format (with missing values added as 0)
+sex_count <- sex_count_wider %>% 
+  pivot_longer(female:male, names_to = "gender", values_to = "n")
+
+
+# add helper variable to create a ribbon in a chart
+sex_count_wider <- sex_count_wider %>% 
+  mutate(middle = ifelse(female > male,male,female))
+
+
+# clean up
+rm(sex_count_1820)
+
+
+################################################################################
+
+
+# calculate number of "firsts" by gender and category
+gender_category_df<- firsts %>% 
+  
+  # filter out NAs
+  filter(!is.na(gender),
+         !is.na(category)) %>% 
+  
+  # rename categories with long names
+  mutate(category = if_else(category == "Education & Science", "Edu & Science", 
+                    if_else(category == "Arts & Entertainment", "Arts & Entertainment", 
+                            category))) %>% 
+  
+  # count number of firsts by gender
+  group_by(gender) %>% 
+  mutate(number_firsts = n()) %>% 
+  
+  # regroup by gender and category
+  ungroup() %>% 
+  group_by(gender, category) %>% 
+  
+  mutate(
+         # count number of first by gender and category
+         number_category_firsts = n(),
+         # calculate proportion of "firsts" for a category within gender
+         pct_category_firsts = number_category_firsts / number_firsts) %>% 
+  
+  # only select relevant columns and rows
+  select(gender, category, pct_category_firsts) %>% 
+  distinct() %>% 
+  
+  # order descending by pct_category_firsts
+  # and make category a factor in that order
+  arrange(desc(pct_category_firsts)) %>% 
+  mutate(category = fct_inorder(category))
+
+```
+
+
+Great, that should be it! We conclude this section by describing our `firsts` tibble:
 
 #### Data Dictionary
 
@@ -1421,7 +1523,7 @@ Looking at this map and the next one, we can also see how fast Americans settled
 ```{r maps 3, cache = TRUE}
 
 
-## Filter for data before WWII:
+## Filter for data 1861-1940:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1861, year < 1941)
 
@@ -1494,7 +1596,7 @@ By that time, no African-American Achiever has been born in the West of the US!
 
 ```{r maps 4, cache = TRUE}
 
-## Filter for data before 1963:
+## Filter for data 1941-1962:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1941, year < 1963)
 
@@ -1567,7 +1669,7 @@ In the aftermath of WWII and the rise of the Civil Rights Movement, the "Firsts"
 
 ```{r maps 5, cache = TRUE}
 
-## Filter for data before 2008:
+## Filter for data 1963-2007:
 firsts_jitter_sf_filtered <- firsts_jitter_sf %>% 
   filter(year >= 1963, year < 2008)
 
@@ -1712,59 +1814,47 @@ We hope for the change and love to spread further and also to rise from more rur
 
 ## Gender Gap over Time
 
+This dataset is not only a source to study racial discrimination, but also to have a look at gender inequality. 
+Let us again visualise the number of "Firsts" over time, but now grouped by gender: 
+
 ```{r gender gap}
 
-sex_count <- firsts %>%
-  filter(!is.na(gender),
-         !is.na(year_bins)) %>% 
-  group_by(year_bins, gender) %>% 
-  count() %>% 
-  arrange(year_bins)
-
-# add missing year 1820
-sex_count_1820 <- sex_count %>% 
-  filter(year_bins == 1800) %>% 
-  mutate(year_bins = as.integer(1820),
-         n = as.integer(0))
-
-sex_count <- bind_rows(sex_count, sex_count_1820)
-
-rm(sex_count_1820)
-
-sex_count_wider <- sex_count %>% 
-  pivot_wider(names_from = gender, values_from = n) %>% 
-  mutate(female = if_else(is.na(female), as.integer(0), female))
-
-sex_count <- sex_count_wider %>% 
-  pivot_longer(female:male, names_to = "gender", values_to = "n")
-
-
-sex_count_wider <- sex_count_wider %>% 
-  mutate(middle = ifelse(female > male,male,female))
-
-
-
+# use sex_count_wider dataframe created in the transformation part
+# for the ribbons
 sex_count_wider %>% 
   ggplot(aes(x = year_bins)) +
+  
+  # use sex_count dataframe created in the transformation part
+  # for the lines by gender
   geom_line(data = sex_count, 
-            aes(x = year_bins, y = n, color = gender),
+            aes(x = year_bins, 
+                y = n, 
+                color = gender),
             size = 1) +
-  scale_color_manual(values = c("#D6AF00", "#4D0B0C"), name = "Gender") +
-  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), fill = "grey50", alpha = 0.2) +
-  geom_ribbon(aes(ymin = middle, ymax = female, group = 1), fill = "grey100", alpha = 0.2) +
+  
+  # colour by gender
+  scale_color_manual(values = c("#D6AF00", "#4D0B0C"), 
+                     name = "Gender") +
+  
+  # add gray ribbon to visualise gender gap
+  geom_ribbon(aes(ymin = middle, ymax = male, group = 1), 
+              fill = "grey50", 
+              alpha = 0.2) +
+  
+  # add labels
   labs(title = "Gender Gap persists over Time",
        subtitle = "Number of \"Firsts\" by Gender",
        x = "Year",
-       y = "Number of Firsts",
-       caption = "") +
+       y = "Number of Firsts") +
+  
   # customize theme
   theme_minimal() + 
   theme(axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title.position = "plot") +
-  theme(text = element_text(family = "Lato", 
+        plot.title.position = "plot",
+        text = element_text(family = "Lato", 
                             colour = "black"),
         plot.title = element_text(family = "Lato", 
                                   colour = "black"),
@@ -1775,73 +1865,87 @@ sex_count_wider %>%
 
 ```
 
-Although African-Americans have growing achievements over the years, the gender
-gaps have also been broaden. In the two spikes of 1860s and 1940s, male number
-grew much more than female, and the difference between sex stays in following 
-years, which can be clearly demonstrated from the shades in the graph.
-However, entering 21th century, the gender equality has improved a lot.
+Even though African-Americans have growing achievements over the years, there is a clear gender gap visible in the number of "Firsts". One might even say that the gender gap has broadened! In the two spikes of the 1860s and the 1960s, male numbers
+grew much more than female numbers. Additionally, the difference between sexes stayed the same in following years, which is clearly demonstrated by the gray shades in the graph.  
+However, entering the 21st century, gender equality seems to have improved a lot!
+
+![](../misc/women.gif)  
+[source](https://giphy.com/gifs/thesocialphotog-black-women-girls-rock-dancing-ZCez8nLG5Kpg0AVMsm)
 
 
 ## Analysing Gender and Category
 
+However, gender (in-)equality is not only about the mere number of "Firsts", but also about stereotypical gender roles.
+Let us analyse, how numbers of "Firsts" are distributed across different categories by gender:
+
 ```{r gender cat, fig.width = 12}
 
-gender_category_df<- firsts %>% 
-  filter(!is.na(gender)) %>% 
-  filter(!is.na(category)) %>% 
-  mutate(category = if_else(category == "Education & Science", "Edu & Science", 
-                    if_else(category == "Arts & Entertainment", "Arts & Entertainment", category))) %>% 
-  group_by(gender) %>% 
-  mutate(number_firsts= n()) %>% 
-  ungroup() %>% 
-  group_by(gender, category) %>% 
-  mutate(number_category_firsts= n(),
-         pct_category_firsts=number_category_firsts/ number_firsts) %>% 
-  select(gender,category,pct_category_firsts) %>% 
-  distinct() %>% 
-  arrange(desc(pct_category_firsts)) %>% 
-  mutate(category = fct_inorder(category))
-
-
-gender_category_df %>% 
-  ggplot(aes(y = pct_category_firsts, x = 
-               reorder(category,desc(pct_category_firsts)),fill=gender)) +
-  geom_col(width = 0.7, position='dodge')+
+# use gender_category_df dataframe created above
+gender_category_df %>%
+  
+  # plot barchart with categories ordered by their percentage
+  ggplot(aes(y = pct_category_firsts, 
+             x = reorder(category, desc(pct_category_firsts)),
+             fill = gender)) +
+  
+  # side-by-side barchart
+  geom_col(width = 0.7, 
+           position='dodge') +
+  
+  # fill by gender
   scale_fill_manual(values = c("#D6AF00", "#4D0B0C"),
                     name = "Gender") +
+  
+  # add single digit percentage labels for males in the graph
   geom_text(
-    aes(label = ifelse(gender=="male" & pct_category_firsts < 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    aes(label = ifelse(gender == "male" & pct_category_firsts < 0.1, 
+                       paste0(round(pct_category_firsts * 100, 0), "%"), 
+                       "")), 
     color = "white", 
     size = 4.5,
     vjust = 1.5,
-    hjust= -0.45
+    hjust = -0.45
   ) +
+  
+  # add double digit percentage labels for males in the graph
   geom_text(
-    aes(label = ifelse(gender=="male" & pct_category_firsts >= 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    aes(label = ifelse(gender == "male" & pct_category_firsts >= 0.1, 
+                       paste0(round(pct_category_firsts * 100, 0), "%"), 
+                       "")), 
     color = "white", 
     size = 4.5,
     vjust = 1.5,
-    hjust= -0.15
+    hjust = -0.15
   ) +
+  
+  # add single digit percentage labels for females in the graph
   geom_text(
-    aes(label = ifelse(gender=="female" & pct_category_firsts < 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    aes(label = ifelse(gender == "female" & pct_category_firsts < 0.1, 
+                       paste0(round(pct_category_firsts * 100, 0), "%"), 
+                       "")), 
     color = "white", 
     size = 4.5,
     vjust = 1.5,
-    hjust=1.35
+    hjust = 1.35
   ) +
+  
+  # add double digit percentage labels for females in the graph
   geom_text(
-    aes(label = ifelse(gender=="female" & pct_category_firsts >= 0.1, paste0(round(pct_category_firsts*100,0), "%"),"")), 
+    aes(label = ifelse(gender == "female" & pct_category_firsts >= 0.1, 
+                       paste0(round(pct_category_firsts * 100, 0), "%"),
+                       "")), 
     color = "white", 
     size = 4.5,
     vjust = 1.5,
-    hjust=1.12
+    hjust = 1.12
   ) +
-  theme_minimal() +
-  scale_y_continuous(labels = scales::percent)+
- # scale_x_reordered()+
+  
+  # add labels
   labs(title = "African-American Achievements follow stereotypical Gender Roles!",
-       subtitle  = "Firsts by Gender and Category")+
+       subtitle = "Firsts by Gender and Category")+
+  
+  # customize theme
+  theme_minimal() +
   theme(axis.title.y = element_blank(),
         axis.title.x = element_blank(),
         panel.grid = element_blank(),
@@ -1855,20 +1959,26 @@ gender_category_df %>%
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black",
                                      size = 15)) +
+  
   NULL
 
 ```
 
 Looking at the Firsts over Categories for African American Men and Women, we see that there are certain trends: Women's firsts are most prevalent in the Arts and Entertainment sectors, however they are also present in the Education and Sciences. For Men, the Sciences and Military Sector are pretty strong, as well as Politics. 
-This confirms the alleged gender bias and overrepresentation of males in technical and political spheres wheras women are traditionally pushed into the Arts and Social sectors. 
+This confirms the alleged gender bias and overrepresentation of males in technical and political spheres whereas women are traditionally pushed into the Arts and Social sectors.
+
+There is a lot of work to do to reach gender and racial equality! 
 
 ## Age Distribution by Category
 
+Let us now come to a more light hearted topic and analyse how old the persons were, when they achieved their firsts. 
+For this, we create bar charts showing the age distribution for different categories:
+
 ```{r}
-# pipe data
+
 firsts %>%
   
-  # filter na values
+  # filter NA values
   filter(!is.na(age_bins)) %>% 
   
   # group by age and category
@@ -1883,39 +1993,40 @@ firsts %>%
   
   # label graph
   labs(title = "Different \"Firsts\" are typically achieved with different ages!",
-     #subtitle = "Categories like sports have relatively young firsts, whereas categories like politics have older firsts",
-     subtitle = "Number of \"Firsts\" by Age and Category",
-     x = "Age",
-     y = "Number of \"Firsts\"") +
+       subtitle = "Number of \"Firsts\" by Age and Category",
+       x = "Age",
+       y = "Number of \"Firsts\"") +
   
   # create multi-panel plots by category
-  facet_wrap(~category) +
+  # enable free y scale to focus on distributions rather than actual numbers
+  facet_wrap(~category,
+             scales = "free_y") +
   
   # customize theme
   theme_minimal() + 
   theme(axis.title.y = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title.position = "plot") +
-  theme(text = element_text(family = "Lato", 
+        plot.title.position = "plot",
+        text = element_text(family = "Lato", 
                             colour = "black"),
         plot.title = element_text(family = "Lato", 
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
 
 
 ```
-
-From this multi-planel bar graph, we can see that different categories have different age distributions. The firsts in categories like Art & Entertainment, Sports, Education & Science, and Social & Jobs are relatively young, whereas those firsts in categories like Politics and the Military are relatively older. We are unable to make conclusions on the age trends of categories in the religion and law as we do not have too many data points for these respective categories. We can see that the age trends between the Sports and Politics category are very different so let's dive deeper into these 2 categories:
+From this multi-panel bar chart, we can see that different categories have different age distributions. The achievers in categories like Arts & Entertainment, Sports, Education & Science, and Social & Jobs are relatively young, whereas those firsts in categories like Politics and the Military are relatively older. We are unable to make conclusions on the age trends of categories in the religion and law as we do not have too many data points for these respective categories. We can see that the age trends between the Sports and Politics category are very different so let's dive deeper into these 2 categories:
 
 ```{r two_category}
 
 # pipe data
 firsts %>%
   
-  # filter na values
+  # filter NA values
   filter(!is.na(age_bins)) %>% 
   
   # group by age and category
@@ -1936,84 +2047,102 @@ firsts %>%
   
   # label graph
   labs(title = "\"Firsts\" in Sports are generally achieved in a younger age than \"Firsts\" in Politics",
-     # subtitle = "Firsts in sports are often times in their 25s whereas firsts in politics are often times in their 50s",
-     subtitle = "Number of \"Firsts\" by Age and Category",
-     x = "Age",
-     y = "Number of \"Firsts\"") +
+       subtitle = "Number of \"Firsts\" by Age and Category",
+       x = "Age",
+       y = "Number of \"Firsts\"") +
   
   # create multi-panel plots by category
-  facet_wrap(~category) +
+  # enable free y scale to focus on distributions rather than actual numbers
+  facet_wrap(~category,
+             scales = "free_y") +
   
   # customize theme
   theme_minimal() + 
   theme(axis.title.y = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title.position = "plot") +
-  theme(text = element_text(family = "Lato", 
+        plot.title.position = "plot",
+        text = element_text(family = "Lato", 
                             colour = "black"),
         plot.title = element_text(family = "Lato", 
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black")) +
+  
   NULL
   
 ```
 
-From the zoomed-in comparison of the two categories, we can see that the age distribution between the sports and politics category is very different. This may be because individuals who work in the political sector are generally older than those who work in sports. In addition, the politics sector has also been slightly more hierarchical compared to the sports sector. These two explanations ensure that the findings from the plot is reasonable. 
+From the zoomed-in comparison of the two categories, we can see that the age distribution between the sports and politics category is very different. This may be because individuals who work in the political sector are generally older than those who are active in sports. In addition, the politics sector has also been slightly more hierarchical compared to the sports sector. These two explanations ensure that the findings from the plot are reasonable. 
 
 ## Firsts per State
 
+Finally, let us come back to some geographical analysis. Even though we have already mapped the birth locations of our **African-Amerian Achievers**, we now want to analyse the number of "Firsts" by state:
+
 ```{r}
 
-states <- firsts %>% 
-  filter(!is.na(state)) %>% #removing NAs from the data
-  count(state) %>% 
-  mutate(tot  = sum(n), 
-         pct = round(n/sum(n)*100, 1),
-         NY = ifelse(`state` == "New York", TRUE, FALSE)) %>%
-  filter(pct > 3) %>% 
-  arrange(desc(n))
-
-ggplot(states, aes(x =  pct, 
-                   # order by counts and fill New York
-                   y = reorder(state, pct), fill = NY)) +  
+firsts %>% 
   
+  # remove NAs
+  filter(!is.na(state)) %>%
+  
+  # count number of "firsts" per state
+  count(state) %>% 
+  
+  # calculate relative number of "firsts" per state
+  mutate(tot = sum(n), 
+         pct = round(n / sum(n) * 100, 1),
+         NY  = ifelse(state == "New York", TRUE, FALSE)) %>%
+  
+  # only visualise states that gave rise to more than 3% of "firsts"
+  filter(pct > 3) %>% 
+  
+  # initialise ggplot
+  ggplot(aes(x =  pct,
+             # order states by their percentage of "firsts"
+             y = reorder(state, pct), 
+             fill = NY)) +  
+  
+  # create bar chart
   geom_col() + 
   
+  # fill New York blue, all other states gray
   scale_fill_manual(values = c("grey80", "#04314D")) + 
   
+  # ensure that there is no space between the state labels and the plot
   scale_x_continuous(expand = expansion(mult = c(0, 0))) +
   
-  # adding the percentages on the columns
+  # add the percentages on the bars
   geom_text(
     aes(label = paste0(pct, "%")),
     colour = "white",
     size = 4,
     hjust = 1.2,
-    family="Lato")+
+    family = "Lato")+
   
-  # adding the comment on new york 
+  # adding the comment on new york part 1
   geom_text(
     data = data.frame(x = 7, y = 3.5, label = "New York outnumbers"),
     aes(x = x, y = y, label = label),
-    colour="black",
-    family="Lato",
-    size = 4,
-    hjust = 1,
-    lineheight = .6,
-    inherit.aes = FALSE)+
-  geom_text(
-    data = data.frame(x = 6.65, y = 2.7, label = "all other states"),
-    aes(x = x, y = y, label = label),
-    colour="black",
-    family="Lato",
+    colour = "black",
+    family = "Lato",
     size = 4,
     hjust = 1,
     lineheight = .6,
     inherit.aes = FALSE)+
   
-  # adding the arrow pointing on the New York Column
+  # adding the comment on new york part 2
+  geom_text(
+    data = data.frame(x = 6.65, y = 2.7, label = "all other states"),
+    aes(x = x, y = y, label = label),
+    colour = "black",
+    family = "Lato",
+    size = 4,
+    hjust = 1,
+    lineheight = .6,
+    inherit.aes = FALSE)+
+  
+  # adding the arrow pointing to the New York Column
   geom_curve(
     data = data.frame(x = 6, y = 4, xend = 7.5, yend = 13),
     mapping = aes(x = x, y = y, xend = xend, yend = yend),
@@ -2036,21 +2165,37 @@ ggplot(states, aes(x =  pct,
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         plot.title.position = "plot",
-        legend.position = "none") +
-  theme(text = element_text(family = "Lato", 
+        legend.position = "none",
+        text = element_text(family = "Lato", 
                             colour = "black"),
         plot.title = element_text(family = "Lato", 
                                   colour = "black"),
         plot.subtitle = element_text(family = "Lato", 
                                      colour = "black"),
         ) +
+  
   NULL
 
 ```
 
+The growth in population in America was strongly focused on the East Coast until around the 1920s, much earlier than for parts in central and western America. This can be explained by migration of communities over time. Hence, it can be seen from the bar chart above that the number of firsts have been significantly higher in Eastern States! 
 
-Due to the growth in population in America being focused on the East Coast until around the 1920s, much earlier than parts for central and western America, it can be seen from the bar chart above that the number of firsts have been significantly higher. This could be due to the migration of communities over time. 
+The data collected starts in the middle of the 18th century, during which the percentage of "free" blacks was not uniform, the north-eastern region had a much higher percentage of free blacks throughout the 1800s which may have also contributed to the stark difference between the west and east during that time. The abolition of slavery in the 1860s additionally saw a huge impact in the growth of the firsts in African American communities. 
 
-The data collected starts from 1800, during which the percentage of "free" blacks was not uniform, the northern eastern region had a much higher percentage of free blacks throughout the 1800s which may have also contributed to the stark difference between the west and east during that time. The ablution of slavery in the 1860s additionally saw a huge impact in the growth of the firsts in African American communities. 
+New York has the highest count in firsts. New York State was one of the pioneer states to abolish slavery in 1827 (It was officially abolished in 1863 in the US), and New York City had one of the largest concentration of free African Americans, with many institutions being established to support the community. 
 
-New York had the highest count in firsts. New York State was one of the pioneer states to abolish slavery in 1827( It was officially abolished in 1863 in the US), and New York City had one of the largest concentration of free African Americans, with many institutions being established to support the community. 
+## Concluding Remarks
+
+We have celebrated Black Lives, their achievements, and many of their battles against racism. Even though these past achievements are outstanding, we must not stop fighting for equality!
+
+Unfortunately, we are not yet in a perfect world, where each and everyone has the same chances and rights. **We must never forget that.** 
+
+Additionally, we have touched upon gender inequality and stereotypical gender roles. Here again we have some way to go!
+
+We hope that our work contributes to raising awareness about the crucial topic of racial and gender inequality.
+
+![](../misc/equal.gif)  
+[source](https://giphy.com/gifs/lgbtq-power-of-our-pride-equality-town-hall-Vhu98PhgRWhpjmmzBH)
+
+# Limitations
+
